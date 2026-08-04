@@ -56,6 +56,21 @@ plain `http://<lan-ip>:3000` will not get camera access in Safari.
 | `ANTHROPIC_MODEL` | Vision-capable Claude model. Default: `claude-opus-5` (defined once, in `src/lib/config.ts`). |
 | `ANTHROPIC_INFERENCE_GEO` | Optional data-residency hint passed to the Anthropic API (e.g. `eu`). Empty = provider default. |
 | `NEXT_PUBLIC_SITE_URL` | Canonical site URL for metadata/sitemap. |
+| `NEXTAUTH_SECRET` | JWT signing secret for the login session (NextAuth v5). |
+| `AUTH_ALLOWED_EMAIL` | The single email address allowed to sign in. |
+| `AUTH_PASSWORD_HASH` | Base64-encoded bcrypt hash of that account's password (see `.env.example`). |
+| `EDGE_CONFIG` | Optional Edge Config connection for the fleet killswitch (fails open when unset). |
+
+### Access gate
+
+While the site is private it is protected by an email + password login
+(NextAuth v5, Credentials provider, JWT sessions — the same pattern as the
+other atthis apps, minus the database: the single account is defined by the
+`AUTH_*` env vars). When any of `NEXTAUTH_SECRET` / `AUTH_ALLOWED_EMAIL` /
+`AUTH_PASSWORD_HASH` is missing the gate is off and the site is public — to
+launch publicly, remove those three from the Vercel environment and redeploy.
+The proxy also checks the fleet killswitch (Vercel Edge Config flags
+`killswitch` / `killswitch_spatiallab`) before anything else.
 
 ### Mock mode
 
@@ -168,8 +183,8 @@ Replace them with the real profile URLs.
   blown-out ones by mean luminance; blur is not detected.
 - Answers depend heavily on sweep quality (light, speed, coverage).
 - Marker positions are the model's rough visual estimate — never precise.
-- No server-side per-user rate limiting yet (see above); the site-wide
-  password gate blocks anonymous API use in the meantime.
+- No server-side per-user rate limiting yet (see above); the email+password
+  login gate blocks anonymous API use in the meantime.
 - Question limits: 3 per scan, 9 per browser session (sessionStorage-backed,
   survives refresh; clearable by the user like any client-side state).
 - iPhone/Safari behavior must be verified on a physical device
