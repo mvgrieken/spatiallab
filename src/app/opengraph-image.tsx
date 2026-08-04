@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
 export const alt =
@@ -5,8 +7,15 @@ export const alt =
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+const geistFont = (file: string) =>
+  readFile(join(process.cwd(), "node_modules/geist/dist/fonts/geist-sans", file));
+
 /** Text-driven Open Graph card in the site's field-notes aesthetic. */
-export default function OpenGraphImage() {
+export default async function OpenGraphImage() {
+  const [regular, semibold] = await Promise.all([
+    geistFont("Geist-Regular.ttf"),
+    geistFont("Geist-SemiBold.ttf"),
+  ]);
   return new ImageResponse(
     (
       <div
@@ -19,7 +28,7 @@ export default function OpenGraphImage() {
           background: "#f5f4ef",
           color: "#171610",
           padding: 72,
-          fontFamily: "sans-serif",
+          fontFamily: "Geist",
         }}
       >
         <div
@@ -75,6 +84,12 @@ export default function OpenGraphImage() {
         </div>
       </div>
     ),
-    size,
+    {
+      ...size,
+      fonts: [
+        { name: "Geist", data: regular, weight: 400, style: "normal" },
+        { name: "Geist", data: semibold, weight: 700, style: "normal" },
+      ],
+    },
   );
 }
