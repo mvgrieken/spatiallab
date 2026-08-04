@@ -48,6 +48,8 @@ export type CapturedFrame = {
   /** Pixel dimensions after client-side downscaling. */
   width: number;
   height: number;
+  /** Mean luminance 0..1, used to drop unusable (near-black/blown-out) frames. */
+  luminance?: number;
 };
 
 export type AnalyzeResponse =

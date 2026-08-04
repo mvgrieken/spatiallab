@@ -23,6 +23,33 @@ type Phase =
   | { name: "result"; analysis: RoomAnalysis; mock: boolean }
   | { name: "error"; message: string };
 
+/**
+ * Cost guard on top of the 3-questions-per-scan UI limit: a browser session
+ * gets at most 9 questions in total (3 scans' worth), tracked in
+ * sessionStorage so a page refresh doesn't reset it.
+ */
+const SESSION_QUESTION_CAP = 9;
+const SESSION_QUESTION_KEY = "sl_q_total";
+
+function readSessionQuestionTotal(): number {
+  try {
+    return Number(sessionStorage.getItem(SESSION_QUESTION_KEY)) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function bumpSessionQuestionTotal(): void {
+  try {
+    sessionStorage.setItem(
+      SESSION_QUESTION_KEY,
+      String(readSessionQuestionTotal() + 1),
+    );
+  } catch {
+    // Storage unavailable (private mode) — the per-scan limit still applies.
+  }
+}
+
 const ANALYSIS_STEPS = [
   "Preparing selected views",
   "Sending frames for analysis",
@@ -115,6 +142,12 @@ export function AskYourRoom() {
     async (question: string) => {
       if (phase.name !== "result" || askPending) return;
       if (asked.length >= MAX_QUESTIONS) return;
+      if (readSessionQuestionTotal() >= SESSION_QUESTION_CAP) {
+        setAskError(
+          "You've reached the question limit for this browser session. Come back later to keep exploring.",
+        );
+        return;
+      }
       setAskPending(true);
       setAskError(null);
       try {
@@ -130,6 +163,7 @@ export function AskYourRoom() {
           return;
         }
         trackEvent("question_asked");
+        bumpSessionQuestionTotal();
         setAsked((cur) => {
           const next = [...cur, { question, answer: json.answer }];
           if (next.length >= MAX_QUESTIONS && !completedRef.current) {

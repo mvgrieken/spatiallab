@@ -7,6 +7,7 @@ import {
   fitFramesToBudget,
   pickCaptureTimes,
   SCAN_DURATION_MS,
+  selectRepresentativeFrames,
   stripDataUrlPrefix,
   TARGET_FRAME_COUNT,
 } from "./frames";
@@ -48,6 +49,50 @@ describe("pickCaptureTimes", () => {
     expect(pickCaptureTimes(10_000, 0)).toEqual([]);
     expect(pickCaptureTimes(0, 6)).toEqual([]);
     expect(pickCaptureTimes(10_000, 1)).toHaveLength(1);
+  });
+});
+
+describe("selectRepresentativeFrames", () => {
+  const f = (luminance?: number) => ({ luminance });
+
+  it("keeps everything when at or under target", () => {
+    const frames = [f(0.5), f(0.6), f(0.4)];
+    expect(selectRepresentativeFrames(frames, 6)).toEqual(frames);
+  });
+
+  it("drops near-black and blown-out frames", () => {
+    const frames = [f(0.01), f(0.5), f(0.55), f(0.99), f(0.6), f(0.45)];
+    const out = selectRepresentativeFrames(frames, 6);
+    expect(out).toHaveLength(4);
+    expect(out.every((x) => x.luminance! >= 0.05 && x.luminance! <= 0.98)).toBe(
+      true,
+    );
+  });
+
+  it("reduces to target with first and last kept", () => {
+    const frames = Array.from({ length: 9 }, (_, i) => ({
+      luminance: 0.5,
+      id: i,
+    }));
+    const out = selectRepresentativeFrames(frames, 6);
+    expect(out).toHaveLength(6);
+    expect(out[0].id).toBe(0);
+    expect(out[out.length - 1].id).toBe(8);
+  });
+
+  it("falls back to unfiltered set when almost everything is unusable", () => {
+    const frames = [f(0.01), f(0.02), f(0.5), f(0.01)];
+    // Only one usable frame (< 3) → keep the original candidates instead.
+    expect(selectRepresentativeFrames(frames, 6)).toHaveLength(4);
+  });
+
+  it("treats unknown luminance as usable", () => {
+    const frames = [f(undefined), f(undefined), f(undefined), f(undefined)];
+    expect(selectRepresentativeFrames(frames, 6)).toHaveLength(4);
+  });
+
+  it("handles empty input", () => {
+    expect(selectRepresentativeFrames([], 6)).toEqual([]);
   });
 });
 

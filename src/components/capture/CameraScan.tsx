@@ -4,10 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { trackEvent } from "@/lib/analytics/events";
 import {
+  CANDIDATE_FRAME_COUNT,
   captureFrameFromVideo,
   fitFramesToBudget,
   pickCaptureTimes,
   SCAN_DURATION_MS,
+  selectRepresentativeFrames,
 } from "@/lib/camera/frames";
 import type { CapturedFrame } from "@/types/room";
 
@@ -119,7 +121,10 @@ export function CameraScan({ onFrames, onCancel, onFallbackToUpload }: Props) {
 
   const startScan = useCallback(() => {
     framesRef.current = [];
-    captureTimesRef.current = pickCaptureTimes();
+    captureTimesRef.current = pickCaptureTimes(
+      SCAN_DURATION_MS,
+      CANDIDATE_FRAME_COUNT,
+    );
     startedAtRef.current = Date.now();
     setElapsed(0);
     setStage({ name: "scanning" });
@@ -141,7 +146,9 @@ export function CameraScan({ onFrames, onCancel, onFallbackToUpload }: Props) {
       }
 
       if (now >= SCAN_DURATION_MS) {
-        const frames = fitFramesToBudget(framesRef.current);
+        const frames = fitFramesToBudget(
+          selectRepresentativeFrames(framesRef.current),
+        );
         stopStream();
         if (frames.length === 0) {
           setStage({

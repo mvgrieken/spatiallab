@@ -11,6 +11,11 @@ import type { CapturedFrame } from "@/types/room";
 
 export const SCAN_DURATION_MS = 10_000;
 export const TARGET_FRAME_COUNT = 6;
+/** Capture more candidates than needed so unusable ones can be dropped. */
+export const CANDIDATE_FRAME_COUNT = 9;
+/** Frames darker/brighter than these mean-luminance bounds are unusable. */
+export const MIN_USABLE_LUMINANCE = 0.05;
+export const MAX_USABLE_LUMINANCE = 0.98;
 export const MAX_LONG_EDGE = 1280;
 export const JPEG_QUALITY = 0.72;
 /** Client-side budget for the JSON payload; server rejects above ~4.2 MB. */
@@ -59,6 +64,35 @@ export function estimateRequestBytes(base64Frames: string[]): number {
   );
 }
 
+/**
+ * Reduce captured candidates to at most `target` representative frames:
+ * drop near-black and blown-out frames (when luminance is known), then keep
+ * an evenly spaced selection so the sweep's viewpoints stay covered. Falls
+ * back to the unfiltered set when filtering would leave too little.
+ */
+export function selectRepresentativeFrames<
+  T extends { luminance?: number },
+>(frames: T[], target: number = TARGET_FRAME_COUNT): T[] {
+  if (frames.length === 0 || target <= 0) return [];
+  let usable = frames.filter(
+    (f) =>
+      f.luminance === undefined ||
+      (f.luminance >= MIN_USABLE_LUMINANCE &&
+        f.luminance <= MAX_USABLE_LUMINANCE),
+  );
+  if (usable.length < Math.min(3, frames.length)) usable = frames;
+  if (usable.length <= target) return usable;
+  const picked: T[] = [];
+  const last = usable.length - 1;
+  let prev = -1;
+  for (let i = 0; i < target; i++) {
+    const idx = Math.round((i * last) / (target - 1));
+    if (idx !== prev) picked.push(usable[idx]);
+    prev = idx;
+  }
+  return picked;
+}
+
 /** Strip a `data:image/...;base64,` prefix if present. */
 export function stripDataUrlPrefix(value: string): string {
   const comma = value.indexOf(",");
@@ -79,6 +113,26 @@ function canvasToJpegBase64(canvas: HTMLCanvasElement, quality: number): string 
   return stripDataUrlPrefix(canvas.toDataURL("image/jpeg", quality));
 }
 
+/** Mean luminance (0..1) via a small downsampled copy — cheap per frame. */
+function meanLuminance(source: CanvasImageSource, w: number, h: number): number | undefined {
+  try {
+    const sample = document.createElement("canvas");
+    sample.width = 48;
+    sample.height = 27;
+    const ctx = sample.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return undefined;
+    ctx.drawImage(source, 0, 0, w, h, 0, 0, sample.width, sample.height);
+    const { data } = ctx.getImageData(0, 0, sample.width, sample.height);
+    let sum = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+    }
+    return sum / (255 * (data.length / 4));
+  } catch {
+    return undefined; // luminance is best-effort; never block capture on it
+  }
+}
+
 /** Capture the current video frame, downscaled and JPEG-compressed. */
 export function captureFrameFromVideo(
   video: HTMLVideoElement,
@@ -94,7 +148,12 @@ export function captureFrameFromVideo(
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
   ctx.drawImage(video, 0, 0, width, height);
-  return { base64: canvasToJpegBase64(canvas, quality), width, height };
+  return {
+    base64: canvasToJpegBase64(canvas, quality),
+    width,
+    height,
+    luminance: meanLuminance(video, vw, vh),
+  };
 }
 
 /** Downscale + re-encode an uploaded image file to a JPEG frame. */

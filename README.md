@@ -164,11 +164,14 @@ Replace them with the real profile URLs.
 
 ## Known limitations
 
-- Frame selection is time-based; dark or blurred frames are not filtered out.
+- Frame selection captures 9 time-spaced candidates and drops near-black /
+  blown-out ones by mean luminance; blur is not detected.
 - Answers depend heavily on sweep quality (light, speed, coverage).
 - Marker positions are the model's rough visual estimate — never precise.
-- No server-side per-user rate limiting yet (see above).
-- The 3-question limit is per page load; a refresh resets it.
+- No server-side per-user rate limiting yet (see above); the site-wide
+  password gate blocks anonymous API use in the meantime.
+- Question limits: 3 per scan, 9 per browser session (sessionStorage-backed,
+  survives refresh; clearable by the user like any client-side state).
 - iPhone/Safari behavior must be verified on a physical device
   (see `docs/iphone-testing.md`).
 
