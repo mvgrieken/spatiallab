@@ -23,11 +23,15 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold">What you provide</h2>
             <p className="mt-2 text-muted">
-              Experiment #001 uses your camera (or photos you upload). During a
-              scan your browser selects roughly six still frames, downscales
-              and compresses them on your device, and sends only those selected
+              The camera experiments (#001 Ask Your Room, #002 Find the Best
+              Spot) use your camera or photos you upload. During a scan your
+              browser selects roughly six still frames, downscales and
+              compresses them on your device, and sends only those selected
               frames for analysis. The full video stream is never recorded,
-              stored or uploaded.
+              stored or uploaded. Experiment #003 (Does It Fit?) runs entirely
+              on your device: the dimensions you enter and the 3D model never
+              leave your browser, and the AR view runs in Apple&rsquo;s own
+              Quick Look viewer.
             </p>
           </section>
 

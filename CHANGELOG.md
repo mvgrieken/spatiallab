@@ -3,6 +3,13 @@
 All notable changes per experiment/release. Details per release live in
 `docs/releases/`.
 
+## [#003 — Does It Fit?] — 2026-08-04 (preview)
+
+Third experiment: parametric furniture at true size — pick a type, set real
+dimensions, preview in 3D and place it in your room via AR Quick Look from
+Safari. Fully on-device (no AI, no backend, no upload). USDZ export validated
+structurally; physical iPhone AR check pending. See `docs/releases/003.md`.
+
 ## [#002 — Find the Best Spot] — 2026-08-04 (preview)
 
 Second experiment: scan once, pick a goal (desk, TV, reading chair, plant,

@@ -38,7 +38,16 @@ export const experiments: Experiment[] = [
   },
   {
     id: "003",
-    slug: "tba-003",
+    slug: "does-it-fit",
+    title: "Does It Fit?",
+    subtitle: "See it at real size. No app required.",
+    description:
+      "Pick a piece of furniture, set its real dimensions, and place it in your room at true size with AR Quick Look — straight from Safari. Everything runs on your device.",
+    published: true,
+  },
+  {
+    id: "004",
+    slug: "tba-004",
     title: "To be announced",
     subtitle: "",
     description: "",
