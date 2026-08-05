@@ -65,8 +65,9 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
 
 export const config = {
   // Everything except Next internals and neutral assets. Icons must stay
-  // public: iOS fetches apple-icon.png without cookies for the home screen.
+  // public (iOS fetches apple-icon.png without cookies for the home screen),
+  // and sitemap.xml must match robots.txt, which publicly references it.
   matcher: [
-    "/((?!_next/static|_next/image|icon\\.svg|icon\\.png|apple-icon\\.png|logo\\.svg|logo-mark\\.svg|robots\\.txt).*)",
+    "/((?!_next/static|_next/image|icon\\.svg|icon\\.png|apple-icon\\.png|logo\\.svg|logo-mark\\.svg|robots\\.txt|sitemap\\.xml).*)",
   ],
 };
