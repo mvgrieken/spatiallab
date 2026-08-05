@@ -15,7 +15,18 @@ export type Experiment = {
   /** Short description for metadata and the experiment intro. */
   description: string;
   published: boolean;
+  /**
+   * Footer disclaimer for this experiment. Defaults to the AI wording;
+   * experiments without AI must not claim to have any (#003, #004).
+   */
+  disclaimer?: string;
 };
+
+export const DEFAULT_DISCLAIMER =
+  "Experimental AI output. Estimates are not measurements or professional advice.";
+
+const NO_AI_DISCLAIMER =
+  "Experimental output. Estimates are not measurements or professional advice.";
 
 export const experiments: Experiment[] = [
   {
@@ -44,6 +55,7 @@ export const experiments: Experiment[] = [
     description:
       "Pick a piece of furniture, set its real dimensions, and place it in your room at true size with AR Quick Look — straight from Safari. Everything runs on your device.",
     published: true,
+    disclaimer: NO_AI_DISCLAIMER,
   },
   {
     id: "004",
@@ -53,6 +65,7 @@ export const experiments: Experiment[] = [
     description:
       "Type a Dutch address and see that roof in 3D from open aerial-LiDAR data — orientation, slope and an indicative solar score per roof plane. Open data, no measurements, no yield promises.",
     published: true,
+    disclaimer: NO_AI_DISCLAIMER,
   },
   {
     id: "005",

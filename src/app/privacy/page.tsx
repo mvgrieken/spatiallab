@@ -48,13 +48,24 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold">The AI provider</h2>
             <p className="mt-2 text-muted">
-              Selected frames and your questions are sent securely to our AI
-              provider (Anthropic) to generate the analysis. The provider
+              This applies to the camera experiments only. Selected frames and
+              your questions are sent securely to our AI provider (Anthropic)
+              to generate the analysis. The provider
               processes them under its own data policies; SpatialLab cannot
               guarantee that the provider never retains data, so treat what
               you film accordingly. Please do not film sensitive or
               confidential situations, documents, or people who have not
               agreed to it.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold">Addresses (#004 Solar Roof)</h2>
+            <p className="mt-2 text-muted">
+              An address you enter is forwarded to the Dutch public data
+              services (PDOK Locatieserver, BAG) and the 3D BAG dataset to look
+              up the building. SpatialLab does not store or log the address,
+              and no AI is involved in this experiment.
             </p>
           </section>
 
@@ -79,7 +90,7 @@ export default function PrivacyPage() {
           </section>
 
           <p className="border-t border-line pt-6 text-sm text-faint">
-            Experimental AI output. Estimates are not measurements or
+            Experimental output. Estimates are not measurements or
             professional advice.
           </p>
         </div>

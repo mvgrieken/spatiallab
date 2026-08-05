@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { SiteFooter, SiteHeader } from "@/components/shared/SiteChrome";
-import type { Experiment } from "@/lib/experiments";
+import { DEFAULT_DISCLAIMER, type Experiment } from "@/lib/experiments";
 
 /**
  * The one shared shell every experiment page uses: number, title, subtitle,
@@ -38,8 +38,7 @@ export function ExperimentLayout({
         )}
         <div className="mt-8">{children}</div>
         <p className="mt-10 border-t border-line pt-5 text-xs text-faint">
-          Experimental AI output. Estimates are not measurements or
-          professional advice.
+          {experiment.disclaimer ?? DEFAULT_DISCLAIMER}
         </p>
       </main>
       <SiteFooter />

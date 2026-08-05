@@ -37,9 +37,10 @@ export function SiteFooter() {
     <footer className="mt-auto border-t border-line">
       <div className="mx-auto max-w-3xl px-5 py-8">
         <p className="text-sm font-medium">SpatialLab by AtThis</p>
+        {/* Site-wide: not every experiment uses AI (#003, #004 don't). */}
         <p className="mt-1 text-sm text-muted">
-          Experimental AI output. Estimates are not measurements or
-          professional advice.
+          Experimental output. Estimates are not measurements or professional
+          advice.
         </p>
         <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
           <a
