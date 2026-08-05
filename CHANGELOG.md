@@ -3,6 +3,13 @@
 All notable changes per experiment/release. Details per release live in
 `docs/releases/`.
 
+## [#005 — Room Acoustics] — 2026-08-05 (preview)
+
+Fifth experiment: one clap estimates your room's reverberation time (RT60),
+recorded and analysed entirely on-device — no upload, no AI. Schroeder
+integration with a T20 fit, validated against synthesized decays with known
+T60. See `docs/releases/005.md`.
+
 ## [#004 — Solar Roof] — 2026-08-05 (preview)
 
 Fourth experiment: type a Dutch address and see that roof in 3D from open

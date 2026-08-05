@@ -69,11 +69,13 @@ export const experiments: Experiment[] = [
   },
   {
     id: "005",
-    slug: "tba-005",
-    title: "To be announced",
-    subtitle: "",
-    description: "",
-    published: false,
+    slug: "room-acoustics",
+    title: "Room Acoustics",
+    subtitle: "Clap once. Hear how your room answers.",
+    description:
+      "One clap is enough to estimate how long sound lingers in your room. Recorded and analysed entirely on your device — no upload, no AI.",
+    published: true,
+    disclaimer: NO_AI_DISCLAIMER,
   },
 ];
 
