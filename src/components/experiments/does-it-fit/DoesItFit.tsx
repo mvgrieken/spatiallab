@@ -377,8 +377,10 @@ export function DoesItFit() {
           {arSupported === false && (
             <p className="text-xs leading-relaxed text-faint">
               Placing it in your room with AR works in Safari on iPhone or
-              iPad. On this device you can rotate the true-scale preview
-              above, or download the model.
+              iPad.{" "}
+              {previewFailed
+                ? "On this device you can download the model file instead."
+                : "On this device you can rotate the true-scale preview above, or download the model."}
             </p>
           )}
           {error && (
