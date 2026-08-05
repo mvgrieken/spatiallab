@@ -3,6 +3,14 @@
 All notable changes per experiment/release. Details per release live in
 `docs/releases/`.
 
+## [#002 — Find the Best Spot] — 2026-08-04 (preview)
+
+Second experiment: scan once, pick a goal (desk, TV, reading chair, plant,
+play area, storage) and get ranked placement spots on your own room's frames —
+best spot, alternative, honest trade-offs and one place to avoid. Reuses the
+full #001 chain; new are only the prompt, schema+repair, one API route and the
+experiment UI. Awaiting physical iPhone validation. See `docs/releases/002.md`.
+
 ## [#001 — Ask Your Room] — 2026-08-04
 
 First experiment, live at https://spatiallab.atthis.ai. Film a room for ten

@@ -20,11 +20,13 @@ export const MAX_FRAME_BASE64_LENGTH = 2_200_000;
 /** Whole-request JSON budget in bytes. Vercel caps request bodies at ~4.5 MB. */
 export const MAX_REQUEST_BYTES = 4_200_000;
 
-const base64Jpeg = z
+export const base64JpegSchema = z
   .string()
   .min(100)
   .max(MAX_FRAME_BASE64_LENGTH)
   .regex(/^[A-Za-z0-9+/=]+$/, "frames must be raw base64 (no data: prefix)");
+
+const base64Jpeg = base64JpegSchema;
 
 export const analyzeRequestSchema = z.object({
   frames: z.array(base64Jpeg).min(MIN_FRAMES).max(MAX_FRAMES),

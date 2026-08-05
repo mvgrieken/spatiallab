@@ -29,11 +29,12 @@ export const experiments: Experiment[] = [
   },
   {
     id: "002",
-    slug: "tba-002",
-    title: "To be announced",
-    subtitle: "",
-    description: "",
-    published: false,
+    slug: "find-the-best-spot",
+    title: "Find the Best Spot",
+    subtitle: "Pick a goal. Your room shows the spot.",
+    description:
+      "Scan your room once, choose a goal — desk, TV, plant — and the AI marks the best spot on a frame of your own room, with an alternative, honest trade-offs and one place to avoid.",
+    published: true,
   },
   {
     id: "003",

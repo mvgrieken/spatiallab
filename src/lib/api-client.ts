@@ -5,6 +5,7 @@ import type {
   AskResponse,
   CapturedFrame,
 } from "@/types/room";
+import type { SpotGoal, SpotResponse } from "@/types/spot";
 
 /**
  * Client-side API access shared by all experiments: one fetch wrapper with a
@@ -46,6 +47,21 @@ export function analyzeRoomRequest(
 ): Promise<AnalyzeResponse> {
   return postJson<AnalyzeResponse>("/api/room/analyze", {
     frames: frames.map((f) => f.base64),
+    language: browserLanguage(),
+  });
+}
+
+// --- Experiment #002: Find the Best Spot --------------------------------
+
+export function findSpotsRequest(
+  frames: CapturedFrame[],
+  goal: SpotGoal,
+  goalCount: number,
+): Promise<SpotResponse> {
+  return postJson<SpotResponse>("/api/spots/analyze", {
+    frames: frames.map((f) => f.base64),
+    goal,
+    goalCount,
     language: browserLanguage(),
   });
 }
