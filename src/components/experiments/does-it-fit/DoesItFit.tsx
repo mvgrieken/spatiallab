@@ -99,6 +99,9 @@ export function DoesItFit() {
   const [error, setError] = useState<string | null>(null);
   // Bumped when the async three.js init finishes, so the rebuild effect runs.
   const [, setPreviewReady] = useState(false);
+  // WebGL can be unavailable (old devices, disabled GPU) — the AR/download
+  // path doesn't need it, so the preview degrades to a note instead.
+  const [previewFailed, setPreviewFailed] = useState(false);
   const startedRef = useRef(false);
 
   // AR Quick Look support (Safari on iOS/iPadOS); null during SSR.
@@ -125,7 +128,13 @@ export function DoesItFit() {
       const { three } = bundle;
       const scene = new three.Scene();
       const camera = new three.PerspectiveCamera(40, 1, 0.1, 50);
-      const renderer = new three.WebGLRenderer({ antialias: true, alpha: true });
+      let renderer: import("three").WebGLRenderer;
+      try {
+        renderer = new three.WebGLRenderer({ antialias: true, alpha: true });
+      } catch {
+        setPreviewFailed(true);
+        return;
+      }
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       host.appendChild(renderer.domElement);
 
@@ -334,15 +343,24 @@ export function DoesItFit() {
           ))}
         </div>
 
-        <div
-          ref={canvasRef}
-          aria-label={`3D preview of the ${spec.label.toLowerCase()} at ${dims.w} by ${dims.h} by ${dims.d} centimeters`}
-          role="img"
-          className="mt-5 overflow-hidden border border-line bg-background"
-        />
-        <p className="mt-2 text-[11px] text-faint">
-          Drag to rotate the preview.
-        </p>
+        {previewFailed ? (
+          <p className="mt-5 border border-line bg-background px-4 py-6 text-sm text-muted">
+            The 3D preview needs WebGL, which isn&rsquo;t available on this
+            device — the true-size AR model below still works.
+          </p>
+        ) : (
+          <>
+            <div
+              ref={canvasRef}
+              aria-label={`3D preview of the ${spec.label.toLowerCase()} at ${dims.w} by ${dims.h} by ${dims.d} centimeters`}
+              role="img"
+              className="mt-5 overflow-hidden border border-line bg-background"
+            />
+            <p className="mt-2 text-[11px] text-faint">
+              Drag to rotate the preview.
+            </p>
+          </>
+        )}
 
         <div className="mt-5 flex flex-col gap-3">
           <Button
