@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" fill="#171610"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="SpatialLab mark">
+  <rect width="64" height="64" rx="12" fill="#171610"/>
   <path d="M8 44 L25.6 33.9 L56 40 M25.6 33.9 L25.6 12" stroke="#8a877a" stroke-width="3" stroke-linecap="round" fill="none"/>
   <circle cx="37.8" cy="30.1" r="12.2" fill="none" stroke="#e84c0f" stroke-width="2.2" opacity="0.55"/>
   <circle cx="37.8" cy="30.1" r="7.4" fill="#e84c0f"/>

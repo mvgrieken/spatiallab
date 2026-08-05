@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 64" role="img" aria-label="SpatialLab by AtThis">
+  <!-- Mark -->
+  <rect width="64" height="64" rx="12" fill="#171610"/>
+  <path d="M8 44 L25.6 33.9 L56 40 M25.6 33.9 L25.6 12" stroke="#8a877a" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <circle cx="37.8" cy="30.1" r="12.2" fill="none" stroke="#e84c0f" stroke-width="2.2" opacity="0.55"/>
+  <circle cx="37.8" cy="30.1" r="7.4" fill="#e84c0f"/>
+  <!-- Wordmark: uses currentColor so the embedding context sets the text color -->
+  <text x="80" y="41" font-family="Geist, system-ui, -apple-system, sans-serif" font-size="30" font-weight="600" letter-spacing="-0.5" fill="currentColor">Spatial<tspan fill="#e84c0f">Lab</tspan></text>
+  <text x="81" y="56" font-family="'Geist Mono', ui-monospace, monospace" font-size="10" letter-spacing="2.2" fill="#8a877a">BY ATTHIS</text>
+</svg>
