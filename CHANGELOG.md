@@ -3,6 +3,14 @@
 All notable changes per experiment/release. Details per release live in
 `docs/releases/`.
 
+## [#004 — Solar Roof] — 2026-08-05 (preview)
+
+Fourth experiment: type a Dutch address and see that roof in 3D from open
+aerial-LiDAR data (3D BAG / AHN) — orientation, slope, area and an indicative
+solar score per roof plane. Keyless open-data pipeline (Locatieserver → BAG
+WFS → 3D BAG), pure tested roof math, no AI, address never stored. See
+`docs/releases/004.md`.
+
 ## [#003 — Does It Fit?] — 2026-08-04 (preview)
 
 Third experiment: parametric furniture at true size — pick a type, set real

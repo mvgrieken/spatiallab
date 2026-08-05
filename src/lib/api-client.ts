@@ -5,6 +5,7 @@ import type {
   AskResponse,
   CapturedFrame,
 } from "@/types/room";
+import type { RoofResponse } from "@/types/roof";
 import type { SpotGoal, SpotResponse } from "@/types/spot";
 
 /**
@@ -49,6 +50,23 @@ export function analyzeRoomRequest(
     frames: frames.map((f) => f.base64),
     language: browserLanguage(),
   });
+}
+
+// --- Experiment #004: Solar Roof ----------------------------------------
+
+export async function analyzeRoofRequest(query: string): Promise<RoofResponse> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const res = await fetch(`/api/roof/analyze?q=${encodeURIComponent(query)}`, {
+      signal: controller.signal,
+    });
+    const json = (await res.json().catch(() => null)) as RoofResponse | null;
+    if (!json) throw new Error("The server returned an unexpected response.");
+    return json;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 // --- Experiment #002: Find the Best Spot --------------------------------

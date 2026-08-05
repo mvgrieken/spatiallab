@@ -47,7 +47,16 @@ export const experiments: Experiment[] = [
   },
   {
     id: "004",
-    slug: "tba-004",
+    slug: "solar-roof",
+    title: "Solar Roof",
+    subtitle: "The government already LiDAR-scanned your roof.",
+    description:
+      "Type a Dutch address and see that roof in 3D from open aerial-LiDAR data — orientation, slope and an indicative solar score per roof plane. Open data, no measurements, no yield promises.",
+    published: true,
+  },
+  {
+    id: "005",
+    slug: "tba-005",
     title: "To be announced",
     subtitle: "",
     description: "",
