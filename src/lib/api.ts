@@ -2,7 +2,7 @@ import "server-only";
 
 import { NextRequest, NextResponse } from "next/server";
 
-import type { RoomAiError } from "@/lib/ai/anthropic";
+import type { RoomAiError } from "@/lib/ai/client";
 import { MAX_REQUEST_BYTES } from "@/lib/validation/schemas";
 
 /**

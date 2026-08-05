@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { SiteFooter, SiteHeader } from "@/components/spatiallab/SiteChrome";
+import { SiteFooter, SiteHeader } from "@/components/shared/SiteChrome";
 
 export const metadata: Metadata = {
   title: "Privacy",

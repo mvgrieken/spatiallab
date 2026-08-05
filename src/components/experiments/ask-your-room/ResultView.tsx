@@ -2,7 +2,10 @@
 
 import { FormEvent, useState } from "react";
 
-import { AnnotatedFrame, CONFIDENCE_LABELS } from "@/components/room/AnnotatedFrame";
+import { AnnotatedFrame, CONFIDENCE_LABELS } from "@/components/shared/AnnotatedFrame";
+import { IndeterminateBar } from "@/components/shared/Progress";
+import { Button } from "@/components/ui/Button";
+import { TextInput } from "@/components/ui/TextInput";
 import { MAX_QUESTION_LENGTH, MAX_QUESTIONS } from "@/lib/validation/schemas";
 import type { RoomAnalysis, RoomAnswer } from "@/types/room";
 
@@ -146,8 +149,8 @@ export function ResultView({
         {askPending && (
           <div className="mt-5 border-t border-line pt-5" aria-live="polite">
             <p className="lab-label">Analyzing your question…</p>
-            <div className="relative mt-3 h-1 w-full overflow-hidden bg-line">
-              <div className="scan-sweep absolute h-full w-1/4 bg-accent" />
+            <div className="mt-3">
+              <IndeterminateBar />
             </div>
           </div>
         )}
@@ -179,7 +182,7 @@ export function ResultView({
               <label htmlFor="room-question" className="sr-only">
                 Ask a question about your room
               </label>
-              <input
+              <TextInput
                 id="room-question"
                 type="text"
                 value={draft}
@@ -187,15 +190,14 @@ export function ResultView({
                 maxLength={MAX_QUESTION_LENGTH}
                 placeholder="Or type your own question…"
                 disabled={!canAsk}
-                className="min-h-12 w-full border border-line bg-surface px-4 text-[15px] placeholder:text-faint focus:border-line-strong focus:outline-none disabled:opacity-50"
               />
-              <button
+              <Button
                 type="submit"
                 disabled={!canAsk || draft.trim().length === 0}
-                className="min-h-12 shrink-0 bg-accent px-5 text-sm font-medium text-accent-contrast transition-opacity hover:opacity-90 disabled:opacity-40"
+                className="shrink-0 !px-5"
               >
                 Ask
-              </button>
+              </Button>
             </form>
           </div>
         ) : (

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { askRoom, RoomAiError } from "@/lib/ai/anthropic";
+import { RoomAiError } from "@/lib/ai/client";
+import { askRoom } from "@/lib/ai/room";
 import { mockAnswer } from "@/lib/ai/mock";
 import { isMockMode } from "@/lib/config";
 import { readJsonBody, roomErrorResponse } from "@/lib/api";

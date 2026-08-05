@@ -101,22 +101,35 @@ plugin architecture. Clear separation of concerns:
 ```
 src/
   app/
-    page.tsx                       # homepage
+    page.tsx                       # homepage (renders the experiment registry)
     privacy/page.tsx               # privacy page
-    experiments/ask-your-room/     # experiment page (server shell)
-    api/room/analyze/route.ts      # POST: frames -> RoomAnalysis
-    api/room/ask/route.ts          # POST: frames + question -> RoomAnswer
+    login/page.tsx                 # access gate (private preview)
+    experiments/ask-your-room/     # experiment page (ExperimentLayout shell)
+    api/room/{analyze,ask}/        # POST: frames -> typed, validated AI output
+    api/auth/[...nextauth]/        # login session handling
   components/
-    capture/                       # CameraScan (sweep) + PhotoUpload (fallback)
-    room/                          # AskYourRoom orchestrator, AnnotatedFrame, ResultView
-    spatiallab/                    # site chrome
+    ui/                            # Button, Panel, TextInput (the whole "kit")
+    shared/                        # ExperimentLayout, SiteChrome, AnnotatedFrame,
+                                   #   Progress (steps/bar), ErrorPanel
+    capture/                       # CameraScan (guided sweep) + PhotoUpload
+    experiments/ask-your-room/     # experiment-specific: orchestrator, ResultView
   lib/
-    ai/                            # Anthropic provider, prompts, mock data (server-only)
-    analytics/                     # event adapter (no-op safe)
-    camera/                        # frame selection, resize, JPEG compression
+    experiments.ts                 # the registry (plain TypeScript, no CMS)
+    ai/client.ts                   # the ONE AI runner: frames+prompt -> typed output
+    ai/room.ts                     # #001's two tasks, thin configs of the runner
+    ai/prompts/ask-your-room.ts    # #001's prompts (one file per experiment)
+    ai/mock.ts                     # dev-only mock data
+    api-client.ts                  # client-side fetch wrapper + typed calls
+    analytics/                     # trackEvent() — vendor isolated in one file
+    camera/                        # frame capture, selection, resize, compression
     validation/                    # Zod schemas + controlled repair
+    auth*.ts, killswitch*.ts       # access gate + fleet killswitch
+  proxy.ts                         # request pipeline: killswitch -> auth gate
   types/room.ts                    # shared domain types
 ```
+
+Design principles live in [PROJECT.md](./PROJECT.md) — that document outranks
+this README.
 
 Flow: the browser captures and compresses frames → `POST /api/room/analyze`
 sends them (as raw base64 JPEG) → the server calls Claude with a structured

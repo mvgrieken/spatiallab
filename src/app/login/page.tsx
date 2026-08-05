@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 
+import { TextInput } from "@/components/ui/TextInput";
 import { auth, signIn } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -53,26 +54,26 @@ export default async function LoginPage({
           <label htmlFor="email" className="lab-label">
             Email
           </label>
-          <input
+          <TextInput
             id="email"
             name="email"
             type="email"
             required
             autoComplete="email"
-            className="mt-2 min-h-12 w-full border border-line bg-surface px-4 text-[15px] focus:border-line-strong focus:outline-none"
+            className="mt-2"
           />
         </div>
         <div>
           <label htmlFor="password" className="lab-label">
             Password
           </label>
-          <input
+          <TextInput
             id="password"
             name="password"
             type="password"
             required
             autoComplete="current-password"
-            className="mt-2 min-h-12 w-full border border-line bg-surface px-4 text-[15px] focus:border-line-strong focus:outline-none"
+            className="mt-2"
           />
         </div>
         {reason && (

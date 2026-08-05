@@ -4,16 +4,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CameraScan } from "@/components/capture/CameraScan";
 import { PhotoUpload } from "@/components/capture/PhotoUpload";
-import { AskedQuestion, ResultView } from "@/components/room/ResultView";
+import {
+  AskedQuestion,
+  ResultView,
+} from "@/components/experiments/ask-your-room/ResultView";
+import { ErrorPanel } from "@/components/shared/ErrorPanel";
+import { AnalysisSteps } from "@/components/shared/Progress";
+import { Button } from "@/components/ui/Button";
+import { Panel } from "@/components/ui/Panel";
 import { trackEvent } from "@/lib/analytics/events";
+import { analyzeRoomRequest, askRoomRequest } from "@/lib/api-client";
 import { toDataUrl } from "@/lib/camera/frames";
 import { MAX_QUESTIONS } from "@/lib/validation/schemas";
-import type {
-  AnalyzeResponse,
-  AskResponse,
-  CapturedFrame,
-  RoomAnalysis,
-} from "@/types/room";
+import type { CapturedFrame, RoomAnalysis } from "@/types/room";
 
 type Phase =
   | { name: "intro" }
@@ -57,36 +60,10 @@ const ANALYSIS_STEPS = [
   "Preparing observations",
 ];
 
-function browserLanguage(): string | undefined {
-  if (typeof navigator === "undefined") return undefined;
-  return navigator.language || undefined;
-}
-
-async function postJson<T>(url: string, body: unknown): Promise<T> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 120_000);
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-    const json = (await res.json().catch(() => null)) as T | null;
-    if (!json) {
-      throw new Error("The server returned an unexpected response.");
-    }
-    return json;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
 /**
- * Orchestrates the whole experiment: intro → capture (camera or upload) →
+ * Experiment #001 orchestrator: intro → capture (camera or upload) →
  * analysis → annotated result with up to three follow-up questions.
- * All state lives in the browser for the duration of the session — nothing
- * is persisted anywhere.
+ * All state lives in the browser for the duration of the session.
  */
 export function AskYourRoom() {
   const [phase, setPhase] = useState<Phase>({ name: "intro" });
@@ -119,10 +96,7 @@ export function AskYourRoom() {
     setStepIndex(0);
     setPhase({ name: "analyzing" });
     try {
-      const json = await postJson<AnalyzeResponse>("/api/room/analyze", {
-        frames: captured.map((f) => f.base64),
-        language: browserLanguage(),
-      });
+      const json = await analyzeRoomRequest(captured);
       if (!json.ok) {
         setPhase({ name: "error", message: json.error });
         return;
@@ -151,13 +125,12 @@ export function AskYourRoom() {
       setAskPending(true);
       setAskError(null);
       try {
-        const json = await postJson<AskResponse>("/api/room/ask", {
-          frames: frames.map((f) => f.base64),
+        const json = await askRoomRequest(
+          frames,
           question,
-          questionCount: asked.length + 1,
-          language: browserLanguage(),
-          summary: phase.analysis.shortSummary,
-        });
+          asked.length + 1,
+          phase.analysis.shortSummary,
+        );
         if (!json.ok) {
           setAskError(json.error);
           return;
@@ -188,18 +161,13 @@ export function AskYourRoom() {
     setPhase({ name: "intro" });
   }, []);
 
-  const startCamera = useCallback(() => {
-    trackEvent("experiment_started");
-    setPhase({ name: "camera" });
-  }, []);
-
   const frameUrls = frames.map(toDataUrl);
 
   return (
     <div>
       {phase.name === "intro" && (
         <div>
-          <div className="border border-line bg-surface p-5 sm:p-7">
+          <Panel>
             <p className="text-[15px] leading-relaxed text-muted">
               Point your camera around the room for about ten seconds. The AI
               looks at a handful of frames and tells you what it sees — then
@@ -239,25 +207,26 @@ export function AskYourRoom() {
             </svg>
 
             <div className="mt-6 flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={startCamera}
-                className="min-h-13 bg-accent px-6 py-3.5 text-base font-medium text-accent-contrast transition-opacity hover:opacity-90"
+              <Button
+                className="min-h-13 py-3.5 text-base"
+                onClick={() => {
+                  trackEvent("experiment_started");
+                  setPhase({ name: "camera" });
+                }}
               >
                 Scan my room
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="secondary"
                 onClick={() => {
                   trackEvent("experiment_started");
                   setPhase({ name: "upload" });
                 }}
-                className="min-h-11 border border-line px-6 text-sm text-muted transition-colors hover:border-line-strong hover:text-foreground"
               >
                 Upload photos instead
-              </button>
+              </Button>
             </div>
-          </div>
+          </Panel>
           <p className="mt-4 text-xs leading-relaxed text-faint">
             Selected frames are sent securely to the AI provider for analysis.
             SpatialLab does not store them in its own database. Estimates are
@@ -279,34 +248,13 @@ export function AskYourRoom() {
       )}
 
       {phase.name === "analyzing" && (
-        <div className="border border-line bg-surface p-5 sm:p-7" aria-live="polite">
-          <p className="lab-label">Analyzing</p>
-          <div className="relative mt-4 h-1 w-full overflow-hidden bg-line">
-            <div className="scan-sweep absolute h-full w-1/4 bg-accent" />
-          </div>
-          <ol className="mt-5 space-y-2">
-            {ANALYSIS_STEPS.map((step, i) => (
-              <li
-                key={step}
-                className={`flex items-baseline gap-3 text-sm transition-colors ${
-                  i === stepIndex
-                    ? "text-foreground"
-                    : i < stepIndex
-                      ? "text-faint line-through decoration-line"
-                      : "text-faint"
-                }`}
-              >
-                <span className="font-mono text-xs">
-                  {i < stepIndex ? "✓" : i === stepIndex ? "●" : "○"}
-                </span>
-                {step}
-              </li>
-            ))}
-          </ol>
-          <p className="mt-5 text-xs text-faint">
-            This usually takes under a minute.
-          </p>
-        </div>
+        <Panel>
+          <AnalysisSteps
+            steps={ANALYSIS_STEPS}
+            activeIndex={stepIndex}
+            note="This usually takes under a minute."
+          />
+        </Panel>
       )}
 
       {phase.name === "result" && (
@@ -323,30 +271,16 @@ export function AskYourRoom() {
       )}
 
       {phase.name === "error" && (
-        <div className="border border-line bg-surface p-5 sm:p-7">
-          <p className="lab-label !text-accent">Something went wrong</p>
-          <p className="mt-3 text-[15px] leading-relaxed text-muted">
-            {phase.message}
-          </p>
-          <div className="mt-6 flex flex-col gap-3">
-            {frames.length > 0 && (
-              <button
-                type="button"
-                onClick={() => analyze(frames)}
-                className="min-h-12 bg-accent px-6 text-sm font-medium text-accent-contrast transition-opacity hover:opacity-90"
-              >
-                Try the analysis again
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={restart}
-              className="min-h-11 border border-line px-6 text-sm text-muted transition-colors hover:border-line-strong hover:text-foreground"
-            >
-              Start over
-            </button>
-          </div>
-        </div>
+        <ErrorPanel
+          title="Something went wrong"
+          message={phase.message}
+          actions={[
+            ...(frames.length > 0
+              ? [{ label: "Try the analysis again", onClick: () => analyze(frames) }]
+              : []),
+            { label: "Start over", onClick: restart, variant: "secondary" as const },
+          ]}
+        />
       )}
     </div>
   );

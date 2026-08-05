@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { ErrorPanel } from "@/components/shared/ErrorPanel";
+import { Button } from "@/components/ui/Button";
+import { Panel } from "@/components/ui/Panel";
 import { trackEvent } from "@/lib/analytics/events";
 import {
   CANDIDATE_FRAME_COUNT,
@@ -13,10 +16,24 @@ import {
 } from "@/lib/camera/frames";
 import type { CapturedFrame } from "@/types/room";
 
+/** Timed on-screen hint: shown until `untilMs` into the sweep. */
+export type ScanInstruction = { untilMs: number; text: string };
+
+const DEFAULT_INSTRUCTIONS: ScanInstruction[] = [
+  { untilMs: 3000, text: "Move slowly" },
+  { untilMs: 6000, text: "Show the floor and walls" },
+  { untilMs: 8500, text: "Avoid fast turns" },
+  { untilMs: Infinity, text: "Almost done" },
+];
+
 type Props = {
   onFrames: (frames: CapturedFrame[]) => void;
   onCancel: () => void;
   onFallbackToUpload: () => void;
+  /** Sweep length; defaults to the standard 10 s. */
+  durationMs?: number;
+  /** On-screen hints during the sweep. */
+  instructions?: ScanInstruction[];
 };
 
 type Stage =
@@ -28,20 +45,20 @@ type Stage =
   | { name: "interrupted" }
   | { name: "failed"; message: string };
 
-function instructionAt(elapsedMs: number): string {
-  if (elapsedMs < 3000) return "Move slowly";
-  if (elapsedMs < 6000) return "Show the floor and walls";
-  if (elapsedMs < 8500) return "Avoid fast turns";
-  return "Almost done";
-}
-
 /**
- * Guided ~10 second camera sweep. Handles the pre-permission explanation, the
- * native permission prompt, frame capture at spaced intervals, cancellation,
- * tab-hide interruption, and every failure path with a way out (retry or
- * photo upload) — never a dead end.
+ * Guided camera sweep, reusable by any experiment that needs frames from a
+ * live camera. Handles the pre-permission explanation, the native permission
+ * prompt, spaced frame capture, cancellation, tab-hide interruption, and
+ * every failure path with a way out (retry or photo upload) — never a dead
+ * end.
  */
-export function CameraScan({ onFrames, onCancel, onFallbackToUpload }: Props) {
+export function CameraScan({
+  onFrames,
+  onCancel,
+  onFallbackToUpload,
+  durationMs = SCAN_DURATION_MS,
+  instructions = DEFAULT_INSTRUCTIONS,
+}: Props) {
   const [stage, setStage] = useState<Stage>({ name: "explain" });
   const [elapsed, setElapsed] = useState(0);
 
@@ -121,10 +138,7 @@ export function CameraScan({ onFrames, onCancel, onFallbackToUpload }: Props) {
 
   const startScan = useCallback(() => {
     framesRef.current = [];
-    captureTimesRef.current = pickCaptureTimes(
-      SCAN_DURATION_MS,
-      CANDIDATE_FRAME_COUNT,
-    );
+    captureTimesRef.current = pickCaptureTimes(durationMs, CANDIDATE_FRAME_COUNT);
     startedAtRef.current = Date.now();
     setElapsed(0);
     setStage({ name: "scanning" });
@@ -145,7 +159,7 @@ export function CameraScan({ onFrames, onCancel, onFallbackToUpload }: Props) {
         }
       }
 
-      if (now >= SCAN_DURATION_MS) {
+      if (now >= durationMs) {
         const frames = fitFramesToBudget(
           selectRepresentativeFrames(framesRef.current),
         );
@@ -161,19 +175,23 @@ export function CameraScan({ onFrames, onCancel, onFallbackToUpload }: Props) {
         onFrames(frames);
       }
     }, 100);
-  }, [onFrames, stopStream]);
+  }, [durationMs, onFrames, stopStream]);
 
   const cancel = useCallback(() => {
     stopStream();
     onCancel();
   }, [onCancel, stopStream]);
 
-  const progress = Math.min(1, elapsed / SCAN_DURATION_MS);
+  const progress = Math.min(1, elapsed / durationMs);
+  const instruction =
+    instructions.find((i) => elapsed < i.untilMs)?.text ??
+    instructions[instructions.length - 1]?.text ??
+    "";
 
   return (
     <div>
       {stage.name === "explain" && (
-        <div className="border border-line bg-surface p-5 sm:p-7">
+        <Panel>
           <p className="lab-label">Before we start</p>
           <h2 className="mt-2 text-xl font-semibold tracking-tight">
             Temporary camera access
@@ -184,35 +202,21 @@ export function CameraScan({ onFrames, onCancel, onFallbackToUpload }: Props) {
             SpatialLab does not store them in its own database.
           </p>
           <div className="mt-6 flex flex-col gap-3">
-            <button
-              type="button"
-              onClick={startCamera}
-              className="min-h-12 bg-accent px-6 text-sm font-medium text-accent-contrast transition-opacity hover:opacity-90"
-            >
-              Enable camera
-            </button>
-            <button
-              type="button"
-              onClick={onFallbackToUpload}
-              className="min-h-11 border border-line px-6 text-sm text-muted transition-colors hover:border-line-strong hover:text-foreground"
-            >
+            <Button onClick={startCamera}>Enable camera</Button>
+            <Button variant="secondary" onClick={onFallbackToUpload}>
               Upload photos instead
-            </button>
-            <button
-              type="button"
-              onClick={cancel}
-              className="min-h-11 text-sm text-faint transition-colors hover:text-foreground"
-            >
+            </Button>
+            <Button variant="ghost" onClick={cancel}>
               Back
-            </button>
+            </Button>
           </div>
-        </div>
+        </Panel>
       )}
 
       {(stage.name === "starting" ||
         stage.name === "ready" ||
         stage.name === "scanning") && (
-        <div className="border border-line bg-surface">
+        <Panel padded={false}>
           <div className="relative aspect-[3/4] overflow-hidden bg-black sm:aspect-video">
             <video
               ref={videoRef}
@@ -236,76 +240,54 @@ export function CameraScan({ onFrames, onCancel, onFallbackToUpload }: Props) {
                   aria-live="polite"
                   className="absolute bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/60 px-4 py-2 font-mono text-xs uppercase tracking-widest text-white backdrop-blur-sm"
                 >
-                  {instructionAt(elapsed)}
+                  {instruction}
                 </p>
               </>
             )}
           </div>
           <div className="flex items-center justify-between gap-3 border-t border-line p-4">
             {stage.name === "ready" ? (
-              <button
-                type="button"
-                onClick={startScan}
-                className="min-h-12 flex-1 bg-accent px-6 text-sm font-medium text-accent-contrast transition-opacity hover:opacity-90"
-              >
-                Start 10-second sweep
-              </button>
+              <Button className="flex-1" onClick={startScan}>
+                Start {Math.round(durationMs / 1000)}-second sweep
+              </Button>
             ) : (
               <p className="lab-label">
                 {stage.name === "scanning"
-                  ? `Scanning ${Math.ceil((SCAN_DURATION_MS - elapsed) / 1000)}s`
+                  ? `Scanning ${Math.ceil((durationMs - elapsed) / 1000)}s`
                   : "…"}
               </p>
             )}
-            <button
-              type="button"
-              onClick={cancel}
-              className="min-h-11 shrink-0 border border-line px-5 text-sm text-muted transition-colors hover:border-line-strong hover:text-foreground"
-            >
+            <Button variant="secondary" className="shrink-0 !px-5" onClick={cancel}>
               Cancel
-            </button>
+            </Button>
           </div>
-        </div>
+        </Panel>
       )}
 
       {(stage.name === "denied" ||
         stage.name === "interrupted" ||
         stage.name === "failed") && (
-        <div className="border border-line bg-surface p-5 sm:p-7">
-          <p className="lab-label !text-accent">
-            {stage.name === "denied" ? "Camera access declined" : "Scan interrupted"}
-          </p>
-          <p className="mt-3 text-[15px] leading-relaxed text-muted">
-            {stage.name === "denied" &&
-              "No problem — you can run the experiment with existing photos instead, or allow camera access and try again."}
-            {stage.name === "interrupted" &&
-              "The scan stopped because the browser was minimized. You can start again."}
-            {stage.name === "failed" && stage.message}
-          </p>
-          <div className="mt-6 flex flex-col gap-3">
-            <button
-              type="button"
-              onClick={onFallbackToUpload}
-              className="min-h-12 bg-accent px-6 text-sm font-medium text-accent-contrast transition-opacity hover:opacity-90"
-            >
-              Upload 3–6 photos instead
-            </button>
-            <button
-              type="button"
-              onClick={startCamera}
-              className="min-h-11 border border-line px-6 text-sm text-muted transition-colors hover:border-line-strong hover:text-foreground"
-            >
-              Try the camera again
-            </button>
-            <button
-              type="button"
-              onClick={cancel}
-              className="min-h-11 text-sm text-faint transition-colors hover:text-foreground"
-            >
-              Back
-            </button>
-          </div>
-        </div>
+        <ErrorPanel
+          title={
+            stage.name === "denied" ? "Camera access declined" : "Scan interrupted"
+          }
+          message={
+            stage.name === "denied"
+              ? "No problem — you can run the experiment with existing photos instead, or allow camera access and try again."
+              : stage.name === "interrupted"
+                ? "The scan stopped because the browser was minimized. You can start again."
+                : stage.message
+          }
+          actions={[
+            { label: "Upload 3–6 photos instead", onClick: onFallbackToUpload },
+            {
+              label: "Try the camera again",
+              onClick: startCamera,
+              variant: "secondary",
+            },
+            { label: "Back", onClick: cancel, variant: "ghost" },
+          ]}
+        />
       )}
     </div>
   );

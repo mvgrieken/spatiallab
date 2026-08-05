@@ -2,6 +2,8 @@
 
 import { useCallback, useRef, useState } from "react";
 
+import { Button } from "@/components/ui/Button";
+import { Panel } from "@/components/ui/Panel";
 import { fitFramesToBudget, frameFromImageFile, toDataUrl } from "@/lib/camera/frames";
 import type { CapturedFrame } from "@/types/room";
 
@@ -50,7 +52,7 @@ export function PhotoUpload({ onFrames, onBack }: Props) {
   }, []);
 
   return (
-    <div className="border border-line bg-surface p-5 sm:p-7">
+    <Panel>
       <p className="lab-label">Photo upload</p>
       <h2 className="mt-2 text-xl font-semibold tracking-tight">
         Use {MIN_PHOTOS}–{MAX_PHOTOS} photos of the room
@@ -102,36 +104,29 @@ export function PhotoUpload({ onFrames, onBack }: Props) {
       )}
 
       <div className="mt-6 flex flex-col gap-3">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           onClick={() => inputRef.current?.click()}
           disabled={busy || frames.length >= MAX_PHOTOS}
-          className="min-h-11 border border-line px-6 text-sm text-muted transition-colors hover:border-line-strong hover:text-foreground disabled:opacity-50"
         >
           {busy
             ? "Processing photos…"
             : frames.length === 0
               ? "Choose photos"
               : `Add more (${frames.length}/${MAX_PHOTOS})`}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
           onClick={() => onFrames(frames)}
           disabled={frames.length < MIN_PHOTOS || busy}
-          className="min-h-12 bg-accent px-6 text-sm font-medium text-accent-contrast transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           {frames.length < MIN_PHOTOS
             ? `Analyze (need at least ${MIN_PHOTOS} photos)`
             : `Analyze ${frames.length} photos`}
-        </button>
-        <button
-          type="button"
-          onClick={onBack}
-          className="min-h-11 text-sm text-faint transition-colors hover:text-foreground"
-        >
+        </Button>
+        <Button variant="ghost" onClick={onBack}>
           Back
-        </button>
+        </Button>
       </div>
-    </div>
+    </Panel>
   );
 }
