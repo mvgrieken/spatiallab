@@ -35,15 +35,30 @@ const gate = auth((req) => {
   return NextResponse.next();
 });
 
+/** Fleet convention: with AUTH_REQUIRED=true a missing/incomplete auth
+ *  configuration fails CLOSED (503) instead of leaving the site public. */
+function misconfiguredResponse(): Response {
+  return new Response(
+    "Service temporarily unavailable (auth not configured).",
+    {
+      status: 503,
+      headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+    },
+  );
+}
+
 export default async function proxy(request: NextRequest, event: NextFetchEvent) {
   if (!isBypassed(request.nextUrl.pathname, KILLSWITCH_BYPASS)) {
     const flags = await readFlags();
     if (shouldKill(flags, APP_SLUG)) return maintenanceResponse();
   }
 
-  // Without full auth configuration the site is public (see README) —
-  // production/preview always have the auth env vars set.
-  if (!authGateEnabled()) return NextResponse.next();
+  if (!authGateEnabled()) {
+    // Fail closed when the gate is required but not (fully) configured;
+    // without AUTH_REQUIRED the site is deliberately public (launch mode).
+    if (process.env.AUTH_REQUIRED === "true") return misconfiguredResponse();
+    return NextResponse.next();
+  }
 
   return gate(request as never, event as never);
 }

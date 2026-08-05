@@ -68,7 +68,10 @@ While the site is private it is protected by an email + password login
 other atthis apps, minus the database: the single account is defined by the
 `AUTH_*` env vars). When any of `NEXTAUTH_SECRET` / `AUTH_ALLOWED_EMAIL` /
 `AUTH_PASSWORD_HASH` is missing the gate is off and the site is public — to
-launch publicly, remove those three from the Vercel environment and redeploy.
+launch publicly, remove those three **and `AUTH_REQUIRED`** from the Vercel
+environment and redeploy. With `AUTH_REQUIRED=true` (the fleet convention,
+set in production and preview) an incomplete auth configuration fails closed
+(503) instead of silently opening the site.
 The proxy also checks the fleet killswitch (Vercel Edge Config flags
 `killswitch` / `killswitch_spatiallab`) before anything else.
 
