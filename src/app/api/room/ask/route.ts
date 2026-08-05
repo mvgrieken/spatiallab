@@ -8,7 +8,7 @@ import { readJsonBody, roomErrorResponse } from "@/lib/api";
 import { askRequestSchema } from "@/lib/validation/schemas";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 180;
 
 export async function POST(request: NextRequest) {
   const body = await readJsonBody(request);

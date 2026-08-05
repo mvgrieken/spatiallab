@@ -3,7 +3,7 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import type { ZodType } from "zod";
 
-import { getApiKey, getInferenceGeo, getModel } from "@/lib/config";
+import { getApiKey, getEffort, getInferenceGeo, getModel } from "@/lib/config";
 
 /**
  * The one place that talks to the AI provider. Every experiment goes through
@@ -30,7 +30,9 @@ function getClient(): Anthropic {
   if (!apiKey) {
     throw new RoomAiError("ANTHROPIC_API_KEY is not configured.", "config");
   }
-  return new Anthropic({ apiKey, timeout: 90_000, maxRetries: 1 });
+  // No SDK retry: a retried vision call doubles the wait past the route cap;
+  // the user-facing retry button is the recovery path.
+  return new Anthropic({ apiKey, timeout: 150_000, maxRetries: 0 });
 }
 
 function imageBlocks(frames: string[]): Anthropic.ContentBlockParam[] {
@@ -69,7 +71,10 @@ export async function runVisionTask<T>(task: VisionTask<T>): Promise<T> {
           content: [...imageBlocks(task.frames), { type: "text", text: task.userText }],
         },
       ],
-      output_config: { format: { type: "json_schema", schema: task.jsonSchema } },
+      output_config: {
+        effort: getEffort(),
+        format: { type: "json_schema", schema: task.jsonSchema },
+      },
       ...(inferenceGeo ? { inference_geo: inferenceGeo } : {}),
     } as Anthropic.MessageCreateParamsNonStreaming);
   } catch (err) {

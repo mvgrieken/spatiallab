@@ -13,7 +13,7 @@ import type { SpotGoal, SpotResponse } from "@/types/spot";
  * thin typed calls on top instead of hand-rolling fetch logic.
  */
 
-const REQUEST_TIMEOUT_MS = 120_000;
+const REQUEST_TIMEOUT_MS = 170_000;
 
 export async function postJson<T>(url: string, body: unknown): Promise<T> {
   const controller = new AbortController();

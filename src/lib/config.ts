@@ -13,6 +13,20 @@ export function getModel(): string {
   return process.env.ANTHROPIC_MODEL?.trim() || DEFAULT_MODEL;
 }
 
+const EFFORT_LEVELS = ["low", "medium", "high", "xhigh", "max"] as const;
+export type Effort = (typeof EFFORT_LEVELS)[number];
+
+/**
+ * Reasoning effort for the vision tasks. Default "medium": measured ~30s for
+ * a 6-frame analysis with unchanged quality, where the model default ("high")
+ * exceeded the 90–120s timeout chain in real use. Override via
+ * ANTHROPIC_EFFORT when a future experiment needs deeper reasoning.
+ */
+export function getEffort(): Effort {
+  const effort = process.env.ANTHROPIC_EFFORT?.trim() as Effort | undefined;
+  return effort && EFFORT_LEVELS.includes(effort) ? effort : "medium";
+}
+
 export function getApiKey(): string | undefined {
   const key = process.env.ANTHROPIC_API_KEY?.trim();
   return key ? key : undefined;
