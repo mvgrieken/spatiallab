@@ -23,22 +23,30 @@ techn. waarde · privacy · foutrobuust · zakelijk · video · positionering.
 | I Room Story | 8 | 4 | 9 | 9 | 8 | 8 | 2 | 7 | 6 | 3 | 5 | 5 | 74 |
 | L Paint From Photo | 8 | 7 | 6 | 4 | 3 | 6 | 7 | 7 | 2 | 8 | 7 | 6 | 71 |
 
+## Status (2026-08-05): reeks compleet
+
+Alle vier gekozen experimenten zijn gebouwd en staan als preview live achter
+de login; #001 t/m #005 zijn geverifieerd met geautomatiseerde browser-E2E
+(inclusief nep-camera en nep-microfoon met bekende grondwaarheden). Wat rest
+is de fysieke iPhone-validatie door de eigenaar en de publieke release.
+
 ## Gekozen reeks
 
-1. **#002 — Find the Best Spot** (directe uitvoering). Maximaal hergebruik van
+1. **#002 — Find the Best Spot** ✅ gebouwd. Maximaal hergebruik van
    de bewezen #001-keten, maar met een écht ander resultaatmodel dan "een extra
    knop op #001": een doelkeuze vóóraf, *gerankte* plekken (beste + alternatief)
    mét eerlijke trade-offs en een afrader, elk visueel gemarkeerd — en "try
    another goal" op dezelfde scan zonder opnieuw te filmen. Lichtinval (idee F)
    wordt hier een redeneerfactor in plaats van een eigen experiment.
-2. **#003 — Does It Fit?** (logisch vervolg, nieuwe browsermogelijkheid).
+2. **#003 — Does It Fit?** ✅ gebouwd (logisch vervolg, nieuwe browsermogelijkheid).
    Parametrische USDZ + AR Quick Look; geen camera-upload, dus privacy-luw en
    deterministisch maatvast. Spike eerst: three.js USDZExporter met één object.
-3. **#004 — Solar Roof** (technisch ambitieus, open data). PDOK/3D BAG/AHN;
+3. **#004 — Solar Roof** ✅ gebouwd (technisch ambitieus, open data). PDOK/3D BAG/AHN;
    spike met één adres/gemeente vóór enige UX. Grootste zakelijke dubbele bodem.
-4. **Reserve: #005 — Room Acoustics.** Sterk wow, maar iOS-microfoonprocessing
-   (AGC/echo cancellation) maakt betrouwbaarheid onzeker; alleen bouwen na een
-   geslaagde Web Audio-spike op een echte iPhone.
+4. **#005 — Room Acoustics** ✅ gebouwd. Het iOS-microfoonrisico is beperkt
+   door alle audio-processing (AGC/echo cancellation/ruisonderdrukking) uit te
+   zetten; de analyse is gevalideerd tegen gesynthetiseerde decays met bekende
+   T60. Resterend risico is uitsluitend hardware-gedrag op een echte iPhone.
 
 ## Overige ideeën
 

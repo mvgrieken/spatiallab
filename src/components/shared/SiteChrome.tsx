@@ -15,10 +15,10 @@ export function SiteHeader() {
         </Link>
         <nav className="flex items-center gap-5">
           <Link
-            href="/experiments/ask-your-room"
+            href="/"
             className="lab-label transition-colors hover:text-foreground"
           >
-            #001
+            Experiments
           </Link>
           <Link
             href="/privacy"
