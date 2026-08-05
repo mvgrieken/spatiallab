@@ -1,12 +1,7 @@
 import Link from "next/link";
 
-/**
- * Shared header/footer chrome. The GitHub and LinkedIn URLs below are
- * placeholders — replace PLACEHOLDER_GITHUB_URL / PLACEHOLDER_LINKEDIN_URL
- * (documented in README → Placeholders).
- */
-export const PLACEHOLDER_GITHUB_URL = "https://github.com/mvgrieken";
-export const PLACEHOLDER_LINKEDIN_URL = "https://www.linkedin.com/";
+/** Shared header/footer chrome. */
+const GITHUB_URL = "https://github.com/mvgrieken";
 
 export function SiteHeader() {
   return (
@@ -48,20 +43,12 @@ export function SiteFooter() {
         </p>
         <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
           <a
-            href={PLACEHOLDER_GITHUB_URL}
+            href={GITHUB_URL}
             className="lab-label transition-colors hover:text-foreground"
             rel="noopener noreferrer"
             target="_blank"
           >
             GitHub
-          </a>
-          <a
-            href={PLACEHOLDER_LINKEDIN_URL}
-            className="lab-label transition-colors hover:text-foreground"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            LinkedIn
           </a>
           <Link
             href="/privacy"

@@ -174,12 +174,6 @@ sizes, but there is no per-IP rate limit yet. Recommended safeguards:
 - Set `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` and `NEXT_PUBLIC_SITE_URL` per
   environment via `vercel env add` (never commit secrets).
 
-## Placeholders
-
-`src/components/spatiallab/SiteChrome.tsx` exports
-`PLACEHOLDER_GITHUB_URL` and `PLACEHOLDER_LINKEDIN_URL` for the footer links.
-Replace them with the real profile URLs.
-
 ## Known limitations
 
 - Frame selection captures 9 time-spaced candidates and drops near-black /
