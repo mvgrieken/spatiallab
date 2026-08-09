@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      # Eén gebundelde PR voor alle minor/patch — de securityrelevante stroom
+      # (CVE-patches komen bijna altijd als patch/minor). Houdt de ruis ~1/week.
+      # Relevant hier: next-auth staat op een beta-release (S-003).
+      npm-minor-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      # Majors = bewuste, hand-geQA'de upgrades. SECURITY-updates komen hier NIET
+      # door geblokkeerd: een echte CVE opent alsnog een PR, ook voor een major.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns: ["*"]

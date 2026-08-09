@@ -1,0 +1,73 @@
+# gitleaks-basisconfig voor de vloot.
+#
+# ⚠️ DE BELANGRIJKSTE REGEL IN DIT BESTAND IS `useDefault = true` HIERONDER.
+#
+# Zonder `[extend] useDefault = true` (en zonder eigen `[[rules]]`) draait
+# gitleaks met NUL detectieregels. Hij scant dan netjes de hele repo, meldt
+# "no leaks found", en de CI wordt groen — terwijl er niets is onderzocht.
+#
+# Dat was op 2026-08-02 de werkelijke stand in drie repo's: MenuMind, SuppleMind
+# en chat37 hadden een .gitleaks.toml met alléén een [allowlist]. In MenuMind
+# stonden op dat moment zes live sleutels (Stripe rk_live_, whsec_, Supabase
+# sb_secret_, OpenAI, Anthropic, Apify) 102 dagen in een gepushte branch. De
+# "Secret scan"-job stond al die tijd op groen. Met de standaardregels erbij
+# vindt gitleaks ze binnen een seconde.
+#
+# Pas de allowlist alleen uit met een reden in commentaar. Een allowlist-regel
+# die niemand kan uitleggen, is een blinde vlek die er geen wil zijn.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Gedocumenteerde false positives"
+paths = [
+  '''(^|/)\.env\.example$''',           # alleen variabelenamen, geen waarden
+  '''(^|/)\.env\..*\.example$''',
+  '''.*\.test\.(ts|tsx|js|mjs)$''',     # testfixtures met nepsleutels
+  '''(^|/)docs/.*\.md$''',              # ontwerpdocumenten met voorbeeldsleutels
+  '''(^|/)node_modules/''',
+  '''(^|/)\.next/''',
+  '''(^|/)(package-lock\.json|pnpm-lock\.yaml)$''',
+]
+# Matchen op de hele regel, zodat LLM-token-AANTALLEN (tokensIn/tokensOut) niet
+# als API-tokens worden gelezen door de generic-api-key-regel.
+regexTarget = "line"
+regexes = [
+  '''tokens(In|Out)''',                 # LLM-token-aantallen, geen API-tokens
+  '''your-[a-z-]+''',                   # placeholders
+  '''changeme''',
+  '''generate-with-openssl''',
+  '''example\.supabase\.co''',
+  '''\bci-(anon|service)-key\b''',      # stubwaarden in de testjob
+
+  # Identifier-namen die toevallig op "key" eindigen. De waarde erachter is een
+  # puntjes- of camelCase-naam zonder entropie, geen sleutel. Gevonden in
+  # SuppleMind (personas.ts), Aigent37 (atlas-contracten) en CareTwinAI
+  # (recommendation-rules) toen de scan voor het eerst draaide.
+  '''\b(label_key|labelKey|ruleKey|localeKey|messageKey|translationKey)\s*[:=]''',
+
+  # Stripe TEST-sleutels zijn per definitie geen geheim; sk_test_placeholder
+  # staat letterlijk in chat37's CI als stubwaarde.
+  '''sk_test_''',
+
+  # Productwoordenschat die de linkedin-regels triggert ('ctLinkedinPost',
+  # "LinkedIn URL" in vertaalbestanden) — geen client-id of -secret.
+  '''\blinkedin\s*:\s*.ct[A-Za-z]+''',
+  '''LinkedIn URL''',
+]
+
+# De standaardregels dekken het meeste, maar niet elk nieuw sleutelformaat even
+# scherp. Deze twee staan er expliciet bij omdat ze in deze vloot in bijna elke
+# repo voorkomen en je ze niet aan een generieke entropieregel wilt overlaten.
+[[rules]]
+id = "openai-project-key"
+description = "OpenAI project-sleutel (sk-proj-)"
+regex = '''sk-proj-[A-Za-z0-9_-]{80,}'''
+keywords = ["sk-proj-"]
+
+[[rules]]
+id = "anthropic-api-key-v3"
+description = "Anthropic API-sleutel (sk-ant-api03-)"
+regex = '''sk-ant-api03-[A-Za-z0-9_-]{80,}'''
+keywords = ["sk-ant-api03-"]

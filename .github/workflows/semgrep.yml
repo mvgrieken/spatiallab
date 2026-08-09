@@ -1,0 +1,31 @@
+name: semgrep
+
+# Gratis SAST-laag (CodeQL-alternatief zonder GitHub Advanced Security, dat voor
+# deze private repo een betaalde licentie vereist). Draait de open Semgrep-registry
+# packs; geen Semgrep-cloud/login nodig, geen secrets. Vult de gitleaks-secretscan
+# (security-scan.yml) aan met code-analyse.
+on:
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 5 * * 1" # wekelijks maandag 05:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  sast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Semgrep SAST (open registry packs)
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet semgrep
+          # --error: faal de job op findings (blokkerend). Parse-warnings falen NIET
+          # (geen --strict). Scope = applicatiecode; testfixtures/build vallen buiten.
+          semgrep scan \
+            --config p/typescript --config p/react --config p/nextjs --config p/owasp-top-ten \
+            --error --metrics=off src

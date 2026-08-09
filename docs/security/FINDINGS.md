@@ -25,7 +25,7 @@ Reikwijdte: verkenning (fase 0-2) + gerichte review; enkele breedte-checks niet-
 - **Uitvoerbaarheid:** PR. · **Regressierisico:** laag-middel.
 
 ## S-003 — Geen CI/CD + geen secret-/dependency-scanning
-- **Severity:** Low-Medium · **Status:** OPEN
+- **Severity:** Low-Medium · **Status:** GEFIXT (2026-08-09) — `security-scan.yml` toegevoegd (gitleaks werkboom+historie met kanarie + `npm audit --omit=dev --audit-level=high` blokkerend, lokaal geverifieerd 0 vulns) + `.gitleaks.toml` (vloot-basis, `useDefault=true`) + dependabot (npm+github-actions, signaleert de next-auth-beta) + semgrep-SAST (blokkerend `--error`, lokaal 0 findings). CodeQL blijft GHAS-afhankelijk.
 - **Bewijs:** geen `.github/`-map, geen workflows. Dus geen secret-scan, geen dependency-audit, geen CodeQL/dependabot/CODEOWNERS. `next-auth` draait op een **beta-release** (`5.0.0-beta.32`) zonder automatische CVE-signalering. Positief neveneffect: het vloot-CI-secret-patroon is per definitie afwezig.
 - **Remediatie:** kit-`security-scan.yml` (gitleaks + kanarie + dep-audit) + dependabot; overweeg next-auth naar een stabiele release zodra beschikbaar.
 - **Uitvoerbaarheid:** PR. · **Regressierisico:** laag.
@@ -43,7 +43,7 @@ Reikwijdte: verkenning (fase 0-2) + gerichte review; enkele breedte-checks niet-
 - **Uitvoerbaarheid:** PR + config. · **Regressierisico:** laag (mogelijk latency/beschikbaarheid).
 
 ## S-006 — Geen security-branch/scan-artefacten (op `main`)
-- **Severity:** Low · **Status:** OPEN
+- **Severity:** Low · **Status:** GEFIXT (2026-08-09) — security-branch `security/cso-2026-08-06` aangemaakt met `docs/security/` + de CI-scan-artefacten uit S-003. Achterstand t.o.v. de vloot ingelopen.
 - **Bewijs:** geen `docs/security/`-map (vóór deze audit), geen security-branch, geen CI-secret-scan; achterstand t.o.v. de rest van de vloot. (Deze audit voegt de docs toe op `security/cso-2026-08-06`.)
 - **Remediatie:** samen met S-003 de kit-CI + governance uitrollen.
 - **Uitvoerbaarheid:** PR. · **Regressierisico:** laag.
