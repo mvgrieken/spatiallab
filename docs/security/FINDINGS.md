@@ -19,7 +19,7 @@ Reikwijdte: verkenning (fase 0-2) + gerichte review; enkele breedte-checks niet-
 - **Uitvoerbaarheid:** PR. · **Regressierisico:** laag-middel (budget-gedrag testen).
 
 ## S-002 — Geen security-headers/CSP (`next.config.ts` leeg)
-- **Severity:** Medium (low-effort fix) · **Status:** OPEN
+- **Severity:** Medium (low-effort fix) · **Status:** GEFIXT (2026-08-09) — `next.config.ts` `headers()`: HSTS/X-Frame DENY/nosniff/Referrer-Policy **enforced** + **Permissions-Policy** die camera/microfoon (kernfeatures) voor 'self' toestaat en geolocation dicht + CSP **Report-Only** (connect-src incl. PDOK/3DBAG open data, media-src blob voor opnames). CSP report-only zodat live-features niet breken; nonce-enforce = QA-vervolg.
 - **Bewijs:** `next.config.ts` bevat geen `headers()`; geen `vercel.json` met headers. Geen HSTS/X-Frame-Options/nosniff/CSP/Referrer-Policy/Permissions-Policy buiten Vercel-platformdefaults. (Camera/microfoon-features → Permissions-Policy is hier juist relevant.)
 - **Remediatie:** kit-header-set via `next.config.ts`; Permissions-Policy bewust zetten voor de camera/mic-features; CSP report-only starten.
 - **Uitvoerbaarheid:** PR. · **Regressierisico:** laag-middel.
