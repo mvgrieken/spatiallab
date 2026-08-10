@@ -1,0 +1,14 @@
+# Vereist "Require review from Code Owners" in branch protection om af te dwingen.
+
+# Standaard-eigenaar voor alles.
+*                            @mvgrieken
+
+# Security-gevoelige oppervlakken expliciet.
+/.github/workflows/          @mvgrieken
+/src/lib/auth.ts             @mvgrieken
+/src/lib/auth.config.ts      @mvgrieken
+/src/proxy.ts                @mvgrieken
+/src/lib/store/              @mvgrieken
+/src/lib/ai/                 @mvgrieken
+/src/app/api/                @mvgrieken
+/docs/security/              @mvgrieken

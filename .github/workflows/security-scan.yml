@@ -1,0 +1,116 @@
+name: security-scan
+
+# Statische security-basis: secrets in werkboom én git-historie, plus bekende
+# CVE's in productie-dependencies. Deterministisch en zonder credentials, dus
+# deze workflow mág blokkeren.
+#
+# Uitgerold over de vloot op 2026-08-02, na een review die liet zien wat het
+# ontbreken hiervan kost: in MenuMind stonden zes live sleutels (Stripe, Supabase,
+# OpenAI, Anthropic, Apify) 102 dagen in een gepushte branch.
+#
+# Drie dingen die deze versie doet en de oude niet:
+#
+# 1. EEN KANARIE. De scanner wordt eerst tegen een nepsleutel gehouden die hij
+#    móet vinden. Drie repo's bleken een .gitleaks.toml te hebben zonder
+#    `useDefault` en zonder eigen rules — gitleaks draait dan met NUL
+#    detectieregels en meldt "no leaks found" over een repo met echte sleutels
+#    erin. Configuratie die er goed uitziet is geen bewijs dat er gemeten wordt.
+# 2. DE HISTORIE, niet alleen de werkboom. Een sleutel die uit main is
+#    herschreven maar op een oude feature-branch blijft staan, is nog steeds
+#    op te halen door iedereen met leestoegang.
+# 3. ACTIONS OP SHA. Een tag is muteerbaar: wie hem kan verzetten, draait code
+#    in elke repo die hem gebruikt.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1' # wekelijks, maandag 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GITLEAKS_VERSION: '8.30.1'
+
+jobs:
+  gitleaks:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v4.2.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks installeren
+        run: |
+          set -euo pipefail
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /tmp gitleaks
+          /tmp/gitleaks version
+
+      # Bewijst dat de scanner mét DEZE config daadwerkelijk iets kan vinden.
+      # Faalt deze stap, dan zeggen de twee stappen hieronder niets — ook al
+      # worden ze groen.
+      #
+      # De uitslag wordt uit het JSON-rapport gelezen en niet uit de exit-code.
+      # Dat is het verschil tussen "gitleaks vond de kanarie" en "gitleaks liep
+      # ergens op stuk": allebei geven een exit-code ≠ 0, en die tweede zou als
+      # geslaagde kanarie lezen. Een leeg of ontbrekend rapport telt als falen.
+      - name: Kanarie — vindt de scanner een sleutel die er zeker is?
+        run: |
+          set -euo pipefail
+          KANARIE="$(mktemp -d)"
+          # De nepsleutel wordt in stukjes opgebouwd, zodat dit bestand zélf geen
+          # token-vormige string bevat. Anders slaat elke secret-guard erop aan —
+          # inclusief de pre-commit hook die in sommige van deze repo's staat.
+          P='gh'; Q='p_'
+          printf 'CANARY_TOKEN=%s%sA1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8\n' "$P" "$Q" > "$KANARIE/kanarie.txt"
+          /tmp/gitleaks dir "$KANARIE" --config="$(pwd)/.gitleaks.toml" --no-banner --redact \
+            --exit-code 0 --report-format json --report-path "$KANARIE/rapport.json" || true
+          AANTAL=$(python3 -c "import json;print(len(json.load(open('$KANARIE/rapport.json'))))" 2>/dev/null || echo 0)
+          if [ "$AANTAL" -lt 1 ]; then
+            echo "::error::De secret-scan vond de kanarie NIET. De gitleaks-config draait waarschijnlijk zonder detectieregels — controleer of '[extend] useDefault = true' in .gitleaks.toml staat. Alle groene uitslagen hieronder zijn betekenisloos."
+            exit 1
+          fi
+          echo "Kanarie gevonden — de scanner werkt."
+
+      - name: Werkboom
+        run: /tmp/gitleaks dir . --config=.gitleaks.toml --no-banner --redact --exit-code 1
+
+      # De historie van ALLE refs, niet alleen de huidige branch.
+      - name: Git-historie (alle refs)
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin '+refs/heads/*:refs/remotes/origin/*'
+          /tmp/gitleaks detect --config=.gitleaks.toml --no-banner --redact --exit-code 1 --log-opts='--all'
+
+  dependency-audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      # actions/checkout v4.2.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      # actions/setup-node v4.1.0
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af
+        with:
+          node-version: '22'
+
+      # Blokkerend: high en critical in productie-dependencies. De ondergrens,
+      # niet het doel.
+      - name: Blokkerend — prod deps, high+
+        run: npm audit --omit=dev --audit-level=high
+
+      # Informatief: moderate en devDependencies. Bewust niet-blokkerend — een
+      # job die wekelijks rood staat om een moderate CVE in een build-tool wordt
+      # genegeerd, en dan mis je ook de high erboven.
+      - name: Informatief — volledige audit
+        if: always()
+        continue-on-error: true
+        run: npm audit --audit-level=moderate
