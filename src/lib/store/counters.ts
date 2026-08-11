@@ -7,9 +7,11 @@ import {
   budgetVerdict,
   dailyAnalysisBudget,
   errorCounterKey,
+  EUR_PER_ANALYSIS,
   VOTE_CORRECT_KEY,
   VOTE_DEDUPE_TTL_S,
   VOTE_INCORRECT_KEY,
+  visitorsKey,
   voteDedupeKey,
   WRITE_LIMIT_TTL_S,
   writeLimitKey,
@@ -145,4 +147,90 @@ export async function consumeAnalysisBudget(): Promise<{
  */
 export async function countError(kind: ErrorClass): Promise<void> {
   await redisCommand(["INCR", errorCounterKey(kind)]);
+}
+
+/** Alle foutklassen, voor het admin-overzicht. Houd in de pas met ErrorClass. */
+const ERROR_CLASSES: ErrorClass[] = [
+  "config",
+  "refused",
+  "invalid_output",
+  "upstream",
+  "geo_upstream",
+];
+
+/**
+ * Tel deze bezoeker mee in de unieke-bezoekers-schatting van vandaag (HLL).
+ * Slaat geen identifier op — alleen de sketch groeit. Faalt stil (de store-
+ * helpers geven bij uitval null terug). Eén round-trip: sketch bijwerken + de
+ * dag-sketch laten verlopen (NX, dus alleen de eerste keer).
+ */
+export async function recordVisitor(hash: string): Promise<void> {
+  const key = visitorsKey(new Date());
+  await redisPipeline([
+    ["PFADD", key, hash],
+    ["EXPIRE", key, String(48 * 60 * 60), "NX"],
+  ]);
+}
+
+export type DailyOverview = {
+  available: boolean;
+  analysesToday: number;
+  budget: number;
+  remaining: number;
+  estCostEur: number;
+  uniqueVisitors: number;
+  votes: { total: number; percentage: number | null };
+  errors: Record<ErrorClass, number>;
+};
+
+/**
+ * Dagoverzicht voor de admin: kosten (analyses × raming), budget, unieke
+ * bezoekers (HLL), stemmen en fouten. Read-only; alle waarden zijn site-brede
+ * dag-aggregaten, nóóit per gebruiker.
+ */
+export async function readDailyOverview(): Promise<DailyOverview> {
+  const now = new Date();
+  const budget = dailyAnalysisBudget();
+  const zeroErrors = Object.fromEntries(ERROR_CLASSES.map((k) => [k, 0])) as Record<
+    ErrorClass,
+    number
+  >;
+  const empty: DailyOverview = {
+    available: false,
+    analysesToday: 0,
+    budget,
+    remaining: budget,
+    estCostEur: 0,
+    uniqueVisitors: 0,
+    votes: { total: 0, percentage: null },
+    errors: zeroErrors,
+  };
+
+  const results = await redisPipeline([
+    ["GET", budgetKey(now)],
+    ["PFCOUNT", visitorsKey(now)],
+    ["GET", VOTE_CORRECT_KEY],
+    ["GET", VOTE_INCORRECT_KEY],
+    ...ERROR_CLASSES.map((k) => ["GET", errorCounterKey(k)]),
+  ]);
+  if (!results) return empty;
+
+  const analysesToday = toInteger(results[0]) ?? 0;
+  const uniqueVisitors = toInteger(results[1]) ?? 0;
+  const correct = toInteger(results[2]) ?? 0;
+  const incorrect = toInteger(results[3]) ?? 0;
+  const errors = Object.fromEntries(
+    ERROR_CLASSES.map((k, i) => [k, toInteger(results[4 + i]) ?? 0]),
+  ) as Record<ErrorClass, number>;
+
+  return {
+    available: true,
+    analysesToday,
+    budget,
+    remaining: Math.max(0, budget - analysesToday),
+    estCostEur: Math.round(analysesToday * EUR_PER_ANALYSIS * 100) / 100,
+    uniqueVisitors,
+    votes: publishableStats(correct, incorrect),
+    errors,
+  };
 }

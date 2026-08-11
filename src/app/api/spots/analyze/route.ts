@@ -5,6 +5,7 @@ import { mockSpotAnalysis } from "@/lib/ai/mock";
 import { findSpots } from "@/lib/ai/spots";
 import { isMockMode } from "@/lib/config";
 import { budgetGuard, readJsonBody, roomErrorResponse } from "@/lib/api";
+import { clientHash, recordVisitor, requestIp } from "@/lib/store/counters";
 import { spotRequestSchema } from "@/lib/validation/spot-schemas";
 
 export const runtime = "nodejs";
@@ -33,6 +34,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Paid work starts here: count it against today's budget first.
+  await recordVisitor(clientHash(requestIp(request.headers)));
   const overBudget = await budgetGuard();
   if (overBudget) return overBudget;
 
