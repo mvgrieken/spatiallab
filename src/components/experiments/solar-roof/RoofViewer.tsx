@@ -108,14 +108,26 @@ function buildRoof(s: ViewerState, planes: ScoredPlane[]): void {
 export function RoofViewer({
   planes,
   selected,
+  onCanvasReady,
 }: {
   planes: ScoredPlane[];
   selected: number | null;
+  /** Hands the live canvas to the parent so a share card can use it as its
+   *  hero. Called once, after WebGL initialises; never called when WebGL is
+   *  unavailable. */
+  onCanvasReady?: (canvas: HTMLCanvasElement) => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
+  // Held in a ref so a changing callback identity never re-runs the
+  // WebGL setup effect. Initialised with the first value, so it is
+  // already correct when the setup effect runs on mount.
+  const onCanvasReadyRef = useRef(onCanvasReady);
   const stateRef = useRef<ViewerState | null>(null);
   const planesRef = useRef(planes);
   const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    onCanvasReadyRef.current = onCanvasReady;
+  }, [onCanvasReady]);
   const [, setReady] = useState(false);
 
   useEffect(() => {
@@ -143,13 +155,21 @@ export function RoofViewer({
       if (disposed || !host) return;
       let renderer: import("three").WebGLRenderer;
       try {
-        renderer = new three.WebGLRenderer({ antialias: true, alpha: true });
+        renderer = new three.WebGLRenderer({
+          antialias: true,
+          alpha: true,
+          // Keeps the drawing buffer readable after the frame is
+          // composited, so the share card can capture the canvas.
+          // Without it toDataURL() returns a blank image.
+          preserveDrawingBuffer: true,
+        });
       } catch {
         setFailed(true);
         return;
       }
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       host.appendChild(renderer.domElement);
+      onCanvasReadyRef.current?.(renderer.domElement);
       const scene = new three.Scene();
       const camera = new three.PerspectiveCamera(45, 1, 0.1, 500);
       scene.add(new three.HemisphereLight(0xfff8ee, 0x8a7a66, 1.15));

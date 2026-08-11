@@ -10,11 +10,14 @@ import {
 
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
+import { ShareResult } from "@/components/shared/ShareResult";
+import { readFitDeepLink, type FitDeepLink } from "@/lib/deep-link";
 import { TextInput } from "@/components/ui/TextInput";
 import { trackEvent } from "@/lib/analytics/events";
 import {
   buildObjectBoxes,
   clampDimsCm,
+  type Dims,
   FIT_OBJECT_SPECS,
   FIT_OBJECTS,
   type FitObject,
@@ -83,6 +86,20 @@ function rebuildObject(
 }
 
 const emptySubscribe = () => () => {};
+const EMPTY_DEEP_LINK: FitDeepLink = {};
+const emptyDeepLink = () => EMPTY_DEEP_LINK;
+
+// useSyncExternalStore requires a stable reference between calls, so the
+// parsed link is cached against the query string it came from.
+let cachedSearch: string | null = null;
+let cachedLink: FitDeepLink = EMPTY_DEEP_LINK;
+const readDeepLink = (): FitDeepLink => {
+  if (window.location.search !== cachedSearch) {
+    cachedSearch = window.location.search;
+    cachedLink = readFitDeepLink(cachedSearch);
+  }
+  return cachedLink;
+};
 const readArSupport = () =>
   document.createElement("a").relList?.supports?.("ar") ?? false;
 
@@ -93,8 +110,32 @@ const readArSupport = () =>
  * API calls, no storage.
  */
 export function DoesItFit() {
+  // A shared link can arrive with the object and its dimensions already in it.
+  // Read once during the initial render so the first paint is already correct;
+  // anything invalid falls back to the defaults rather than erroring.
   const [type, setType] = useState<FitObject>("closet");
-  const [dims, setDims] = useState(FIT_OBJECT_SPECS.closet.defaults);
+  const [dims, setDims] = useState<Dims>(FIT_OBJECT_SPECS.closet.defaults);
+
+  // A shared link can arrive with the object and its dimensions already in it.
+  // Read through useSyncExternalStore rather than a lazy useState initialiser:
+  // the query string does not exist during server rendering, so an initialiser
+  // makes the prefill depend on hydration timing. Applied with React's
+  // adjust-state-during-render pattern, the same one AnnotatedFrame uses.
+  const link = useSyncExternalStore(emptySubscribe, readDeepLink, emptyDeepLink);
+  const [appliedLink, setAppliedLink] = useState<FitDeepLink | null>(null);
+  if (appliedLink !== link) {
+    setAppliedLink(link);
+    const linked = link.type ?? "closet";
+    const spec = FIT_OBJECT_SPECS[linked];
+    setType(linked);
+    setDims(
+      clampDimsCm(linked, {
+        w: link.w ?? spec.defaults.w,
+        d: link.d ?? spec.defaults.d,
+        h: link.h ?? spec.defaults.h,
+      }),
+    );
+  }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Bumped when the async three.js init finishes, so the rebuild effect runs.
@@ -130,7 +171,14 @@ export function DoesItFit() {
       const camera = new three.PerspectiveCamera(40, 1, 0.1, 50);
       let renderer: import("three").WebGLRenderer;
       try {
-        renderer = new three.WebGLRenderer({ antialias: true, alpha: true });
+        renderer = new three.WebGLRenderer({
+          antialias: true,
+          alpha: true,
+          // Keeps the drawing buffer readable after the frame is
+          // composited, so the share card can capture the canvas.
+          // Without it toDataURL() returns a blank image.
+          preserveDrawingBuffer: true,
+        });
       } catch {
         setPreviewFailed(true);
         return;
@@ -387,6 +435,25 @@ export function DoesItFit() {
             <p className="text-sm text-accent" role="alert">
               {error}
             </p>
+          )}
+          {!previewFailed && (
+            <ShareResult
+              filename="spatiallab-does-it-fit.png"
+              buildSpec={async () => {
+                // The live WebGL canvas is the hero. Readable because the
+                // renderer is created with preserveDrawingBuffer.
+                const canvas = sceneRef.current?.renderer.domElement;
+                if (!canvas) return null;
+                return {
+                  experiment: "#003 Does It Fit?",
+                  headline: `${spec.label} · ${dims.w} × ${dims.d} × ${dims.h} cm`,
+                  detail:
+                    "Rendered at true size from the dimensions entered. Computed on-device, no AI involved.",
+                  hero: canvas,
+                  heroSize: { width: canvas.width, height: canvas.height },
+                };
+              }}
+            />
           )}
         </div>
       </Panel>

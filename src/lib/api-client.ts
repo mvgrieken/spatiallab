@@ -54,19 +54,10 @@ export function analyzeRoomRequest(
 
 // --- Experiment #004: Solar Roof ----------------------------------------
 
-export async function analyzeRoofRequest(query: string): Promise<RoofResponse> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  try {
-    const res = await fetch(`/api/roof/analyze?q=${encodeURIComponent(query)}`, {
-      signal: controller.signal,
-    });
-    const json = (await res.json().catch(() => null)) as RoofResponse | null;
-    if (!json) throw new Error("The server returned an unexpected response.");
-    return json;
-  } finally {
-    clearTimeout(timeout);
-  }
+/** POST, not GET: the address must stay out of the URL and therefore out of
+ *  the platform's request logs. */
+export function analyzeRoofRequest(query: string): Promise<RoofResponse> {
+  return postJson<RoofResponse>("/api/roof/analyze", { q: query });
 }
 
 // --- Experiment #002: Find the Best Spot --------------------------------

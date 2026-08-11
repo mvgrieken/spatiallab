@@ -4,6 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { DecayChart } from "@/components/experiments/room-acoustics/DecayChart";
 import { ErrorPanel } from "@/components/shared/ErrorPanel";
+import { ShareResult } from "@/components/shared/ShareResult";
+import {
+  RoomComparison,
+  type SavedRoom,
+} from "@/components/experiments/room-acoustics/RoomComparison";
+import { renderDecayHero } from "@/lib/share/decay-hero";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import { trackEvent } from "@/lib/analytics/events";
@@ -142,10 +148,15 @@ export function RoomAcoustics() {
     }
   }, []);
 
+  // Rooms kept for comparison, in memory only — like everything else here,
+  // they are gone when the page closes.
+  const [saved, setSaved] = useState<SavedRoom[]>([]);
+
   const restart = useCallback(() => {
     stopStream(streamRef.current);
     streamRef.current = null;
     setMicOpen(false);
+    setSaved([]);
     setPhase({ name: "intro" });
   }, []);
 
@@ -190,6 +201,13 @@ export function RoomAcoustics() {
             Hold the phone at arm&rsquo;s length, away from walls, and give one
             sharp clap. Recording lasts {RECORD_SECONDS} seconds.
           </p>
+
+          {saved.length > 0 && (
+            <p className="mt-3 text-sm text-faint">
+              Walk to the next room first — you are comparing against{" "}
+              {saved.map((r) => r.label).join(", ")}.
+            </p>
+          )}
 
           <div className="mt-5 h-2 w-full overflow-hidden bg-line" aria-hidden>
             <div
@@ -237,12 +255,34 @@ export function RoomAcoustics() {
             rt60={phase.result.estimate.rt60}
           />
 
+          <RoomComparison rooms={saved} onClear={() => setSaved([])} />
+
           <section>
             <p className="text-sm text-muted">
               <span className="lab-label mr-2">Confidence</span>
               {QUALITY_NOTE[phase.result.estimate.quality]}
             </p>
           </section>
+
+          <ShareResult
+            filename="spatiallab-room-acoustics.png"
+            buildSpec={async () => {
+              if (phase.name !== "result") return null;
+              const hero = renderDecayHero(
+                phase.result.points,
+                phase.result.estimate.rt60,
+              );
+              if (!hero) return null;
+              const character = describeRoom(phase.result.estimate.rt60);
+              return {
+                experiment: "#005 Room Acoustics",
+                headline: `RT60 ≈ ${phase.result.estimate.rt60.toFixed(2)} s · ${character.label}`,
+                detail: `${character.meaning} Measured from one clap, entirely on-device — an estimate, not a certified acoustic measurement.`,
+                hero,
+                heroSize: { width: hero.width, height: hero.height },
+              };
+            }}
+          />
 
           <section className="border-t border-line pt-5">
             <ul className="space-y-1">
@@ -259,10 +299,26 @@ export function RoomAcoustics() {
               </li>
             </ul>
             <div className="mt-5 flex flex-col gap-3">
-              <Button onClick={() => setPhase({ name: "ready" })}>
+              <Button
+                onClick={() => {
+                  if (phase.name !== "result") return;
+                  setSaved((rooms) => [
+                    ...rooms,
+                    {
+                      id: rooms.length + 1,
+                      label: `Room ${rooms.length + 1}`,
+                      rt60: phase.result.estimate.rt60,
+                    },
+                  ]);
+                  setPhase({ name: "ready" });
+                }}
+              >
+                Keep this and measure another room
+              </Button>
+              <Button variant="secondary" onClick={() => setPhase({ name: "ready" })}>
                 Clap again
               </Button>
-              <Button variant="secondary" onClick={restart}>
+              <Button variant="ghost" onClick={restart}>
                 Done
               </Button>
             </div>

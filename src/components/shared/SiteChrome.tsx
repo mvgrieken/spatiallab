@@ -52,6 +52,18 @@ export function SiteFooter() {
             GitHub
           </a>
           <Link
+            href="/stats"
+            className="lab-label transition-colors hover:text-foreground"
+          >
+            Track record
+          </Link>
+          <Link
+            href="/where-it-fails"
+            className="lab-label transition-colors hover:text-foreground"
+          >
+            Where it fails
+          </Link>
+          <Link
             href="/privacy"
             className="lab-label transition-colors hover:text-foreground"
           >

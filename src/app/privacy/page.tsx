@@ -5,7 +5,7 @@ import { SiteFooter, SiteHeader } from "@/components/shared/SiteChrome";
 export const metadata: Metadata = {
   title: "Privacy",
   description:
-    "How SpatialLab handles camera images, questions and answers. No image database, no accounts, no tracking of personal content.",
+    "How SpatialLab handles camera images, questions and answers. No content stored, no accounts — only anonymous counters, and exactly where AI processing happens.",
   alternates: { canonical: "/privacy" },
 };
 
@@ -38,10 +38,42 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold">What SpatialLab stores</h2>
             <p className="mt-2 text-muted">
-              Nothing. SpatialLab does not maintain a database. In this version
-              we do not store video, images, frames, questions, answers, user
-              profiles, scan sessions, or IP addresses in any database of our
-              own. When you close or refresh the page, your scan is gone.
+              No content of yours. We do not store video, images, frames,
+              questions, answers, addresses, audio, user profiles or scan
+              sessions. When you close or refresh the page, your scan is gone.
+            </p>
+            <p className="mt-3 text-muted">
+              We do keep four kinds of counters, none of which can be traced to
+              a person or to anything you filmed:
+            </p>
+            <ul className="mt-3 space-y-2 text-muted">
+              <li>
+                — Two whole numbers for the entire site: how many visitors
+                tapped &ldquo;yes&rdquo; and how many tapped &ldquo;no&rdquo;
+                on the question below an answer. A tap records nothing else —
+                not which answer, not which experiment, not when. That is the
+                number on the{" "}
+                <a href="/stats" className="underline hover:text-foreground">
+                  track record
+                </a>{" "}
+                page.
+              </li>
+              <li>
+                — One counter per type of failure (for example &ldquo;the AI
+                service was unreachable&rdquo;), so we can tell a broken
+                endpoint from a quiet day.
+              </li>
+              <li>— A daily count of analyses, to stay inside a fixed budget.</li>
+              <li>
+                — Short-lived technical keys that stop one visitor from voting
+                twice or hammering the endpoint. These are derived from your IP
+                address through a one-way hash with a secret salt, cannot be
+                turned back into an address, are never stored next to a vote,
+                and expire within 24 hours.
+              </li>
+            </ul>
+            <p className="mt-3 text-muted">
+              These counters live in a database hosted in Frankfurt, in the EU.
             </p>
           </section>
 
@@ -50,12 +82,23 @@ export default function PrivacyPage() {
             <p className="mt-2 text-muted">
               This applies to the camera experiments only. Selected frames and
               your questions are sent securely to our AI provider (Anthropic)
-              to generate the analysis. The provider
-              processes them under its own data policies; SpatialLab cannot
-              guarantee that the provider never retains data, so treat what
-              you film accordingly. Please do not film sensitive or
-              confidential situations, documents, or people who have not
-              agreed to it.
+              to generate the analysis. The provider processes them under its
+              own data policies; SpatialLab cannot guarantee that the provider
+              never retains data, so treat what you film accordingly. Please do
+              not film sensitive or confidential situations, documents, or
+              people who have not agreed to it.
+            </p>
+            <p className="mt-3 text-muted">
+              <strong className="font-medium text-foreground">
+                That processing happens in the United States.
+              </strong>{" "}
+              We would rather it happened in the EU, and the code is ready for
+              it, but the provider&rsquo;s API currently offers no EU option —
+              it accepts only &ldquo;global&rdquo; and &ldquo;us&rdquo;. Routing
+              through a cloud provider&rsquo;s European region is on the roadmap;
+              until then, this is where your frames go, and we would rather say
+              so plainly than leave it out. Nothing is stored there by us, and
+              the counters described above never leave the EU.
             </p>
           </section>
 
@@ -64,8 +107,10 @@ export default function PrivacyPage() {
             <p className="mt-2 text-muted">
               An address you enter is forwarded to the Dutch public data
               services (PDOK Locatieserver, BAG) and the 3D BAG dataset to look
-              up the building. SpatialLab does not store or log the address,
-              and no AI is involved in this experiment.
+              up the building. SpatialLab does not store or log the address, and
+              no AI is involved in this experiment. The address travels in the
+              body of the request rather than in the web address, so it does not
+              end up in the hosting platform&rsquo;s request logs either.
             </p>
           </section>
 

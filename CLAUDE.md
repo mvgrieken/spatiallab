@@ -16,8 +16,15 @@ everything, including this file.
 - **No professional advice.** No structural, electrical, fire-safety, health,
   accessibility-compliance or installation advice — ever. The fixed
   redirect-to-a-professional response is intentional.
-- **No image storage.** SpatialLab keeps no database of frames, questions or
-  answers. Do not add persistence of user content in v1.
+- **No user content, only anonymous aggregates.** SpatialLab keeps no database
+  of frames, questions, answers, addresses or audio. Do not add persistence of
+  user content. The one exception, added for the public launch, is a counter
+  store (`src/lib/store/`, Upstash Redis in Frankfurt): site-wide vote tallies,
+  error tallies, a daily analysis count, and short-lived hashed keys for
+  dedupe and rate limiting that expire within 24 hours. A counter must never
+  become a row about a person: no identifiers stored beside a value, no
+  timestamps per event, no reference to what was analysed. If a feature needs
+  more than an integer, it does not belong in this store.
 
 ## Engineering rules
 
@@ -71,3 +78,13 @@ everything, including this file.
 Before calling work done: `npm run lint && npm run typecheck && npm test &&
 npm run build`, plus a manual pass over `docs/iphone-testing.md` for anything
 touching capture, analysis or the result view.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

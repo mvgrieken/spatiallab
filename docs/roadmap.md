@@ -48,6 +48,23 @@ is de fysieke iPhone-validatie door de eigenaar en de publieke release.
    zetten; de analyse is gevalideerd tegen gesynthetiseerde decays met bekende
    T60. Resterend risico is uitsluitend hardware-gedrag op een echte iPhone.
 
+## Uitgesteld (CEO-review 2026-08-06)
+
+Bewust niet in de launch-scope, met reden:
+
+- **Vloot-brede auth-standaardisatie** — apart traject,
+  `~/dev/atthis-ai/docs/auth-standaardisatie.md`.
+- **Gedeelde three.js-viewer extraheren** — tweede gebruik is bereikt (#003 en
+  #004), maar de twee renderdoelen verschillen genoeg dat de winst bescheiden is.
+- **Shadow Study (#00x)** — pas als de geo-basis van #004 herbruikbaar blijkt.
+- **Per-antwoord-granulariteit in de eerlijkheidsscore** — nu site-breed; per
+  experiment of per antwoord splitsen is pas zinvol bij volume, omdat elke
+  splitsing de publicatiedrempel verder weg legt.
+- **EU-verwerking van Opus 5 via Bedrock EU of Vertex europe-*** — de
+  first-party API kent geen EU-optie (`inference_geo` accepteert alleen
+  `global` en `us`). Onderzoeken inclusief ondersteuning voor gestructureerde
+  JSON-uitvoer, waar de hele codebase op leunt.
+
 ## Overige ideeën
 
 - **Later:** J Shadow Study (pas als de geo-basis van #004 bewezen herbruikbaar
