@@ -42,6 +42,18 @@ export function budgetKey(now: Date): string {
   return `budget:${dayStamp(now)}`;
 }
 
+/** Benaderde unieke bezoekers van vandaag via een HyperLogLog-sketch: een
+ *  probabilistische bitmap, nooit een lijst identifiers — respecteert "geen
+ *  user content" (geen adres, geen per-event-tijdstip, alleen de sketch groeit). */
+export function visitorsKey(now: Date): string {
+  return `visitors:${dayStamp(now)}`;
+}
+
+/** Ruwe kostenraming per betaalde analyse (8-frame Opus-5-vision). De €0,10 uit
+ *  de budget-comment hierboven was 3-5× te optimistisch; €0,40 is een veilige
+ *  basis voor het admin-kostenoverzicht — indicatief, niet voor facturering. */
+export const EUR_PER_ANALYSIS = 0.4;
+
 export function voteDedupeKey(clientHash: string): string {
   return `vote-once:${clientHash}`;
 }

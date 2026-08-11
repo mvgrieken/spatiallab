@@ -4,8 +4,10 @@ import {
   budgetKey,
   budgetVerdict,
   dayStamp,
+  EUR_PER_ANALYSIS,
   MIN_VOTES_TO_PUBLISH,
   publishableStats,
+  visitorsKey,
 } from "./keys";
 
 describe("dayStamp", () => {
@@ -16,6 +18,21 @@ describe("dayStamp", () => {
   it("rolls over at UTC midnight, not local midnight", () => {
     expect(dayStamp(new Date("2026-08-06T23:59:59Z"))).toBe("2026-08-06");
     expect(dayStamp(new Date("2026-08-07T00:00:00Z"))).toBe("2026-08-07");
+  });
+});
+
+describe("visitorsKey", () => {
+  it("buckets unique visitors by UTC date, apart from the budget key", () => {
+    expect(visitorsKey(new Date("2026-08-06T14:44:00Z"))).toBe("visitors:2026-08-06");
+    expect(visitorsKey(new Date("2026-08-06T14:44:00Z"))).not.toBe(
+      budgetKey(new Date("2026-08-06T14:44:00Z")),
+    );
+  });
+});
+
+describe("EUR_PER_ANALYSIS", () => {
+  it("is a positive cost estimate used by the admin overview", () => {
+    expect(EUR_PER_ANALYSIS).toBeGreaterThan(0);
   });
 });
 
