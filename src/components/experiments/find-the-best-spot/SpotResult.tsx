@@ -1,6 +1,13 @@
 "use client";
 
 import { AnnotatedFrame } from "@/components/shared/AnnotatedFrame";
+import { AnswerFeedback } from "@/components/shared/AnswerFeedback";
+import { ShareResult } from "@/components/shared/ShareResult";
+import { CONFIDENCE_LABELS } from "@/components/shared/AnnotatedFrame";
+import { loadImage } from "@/lib/share/card";
+import { fitObjectForGoal } from "@/lib/deep-link";
+import { FIT_OBJECT_SPECS } from "@/lib/fit/objects";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import type { SpotAnalysis, SpotGoal } from "@/types/spot";
 import { SPOT_GOAL_LABELS } from "@/types/spot";
@@ -80,6 +87,29 @@ export function SpotResult({
       )}
 
       <section className="border-t border-line pt-6">
+        <AnswerFeedback className="mb-6" />
+        <ShareResult
+          className="mb-6"
+          filename="spatiallab-best-spot.png"
+          buildSpec={async () => {
+            // The top-ranked spot is the result worth sharing.
+            const best = analysis.spots[0];
+            if (!best) return null;
+            const hero = await loadImage(
+              frameUrls[Math.min(best.frameIndex, frameUrls.length - 1)] ?? "",
+            );
+            return {
+              experiment: `#002 Find the Best Spot · ${SPOT_GOAL_LABELS[goal]}`,
+              headline: best.title,
+              detail: CONFIDENCE_LABELS[best.confidence],
+              hero,
+              heroSize: hero
+                ? { width: hero.naturalWidth, height: hero.naturalHeight }
+                : undefined,
+              marker: best.marker,
+            };
+          }}
+        />
         {analysis.limitations.length > 0 && (
           <ul className="space-y-1">
             {analysis.limitations.map((l) => (
@@ -89,6 +119,27 @@ export function SpotResult({
             ))}
           </ul>
         )}
+        {(() => {
+          // Two of the six goals have a counterpart in #003. The link hands
+          // over the object type only — #002 never learns any dimensions —
+          // so the wording promises exactly that and nothing more.
+          const fitObject = fitObjectForGoal(goal);
+          if (!fitObject) return null;
+          return (
+            <p className="mt-6 text-sm text-muted">
+              <Link
+                href={`/experiments/does-it-fit?type=${fitObject}`}
+                className="underline hover:text-foreground"
+              >
+                See whether a {FIT_OBJECT_SPECS[fitObject].label.toLowerCase()}{" "}
+                fits there
+              </Link>{" "}
+              — experiment #003 places one at real size in your room. You enter
+              the measurements; nothing is carried over from this scan.
+            </p>
+          );
+        })()}
+
         <div className="mt-6 flex flex-col gap-3">
           {remainingGoals > 0 && (
             <Button onClick={onTryAnotherGoal}>
