@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import type { NextFetchEvent, NextRequest } from "next/server";
 
 import { authConfig, authGateEnabled } from "@/lib/auth.config";
+import { ACCESS_COOKIE, verifyAccessToken } from "@/lib/access-link";
 import { isBypassed, maintenanceResponse, shouldKill } from "@/lib/killswitch";
 import { readFlags } from "@/lib/killswitch-read";
 
@@ -61,16 +62,40 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
   }
 
   // Auth is configured. AUTH_REQUIRED chooses the SCOPE of the gate:
-  //   "false"  → public launch: only /admin (+ its APIs) stays behind login,
-  //              the experiments are public; the admin login keeps working.
+  //   "false"  → public bèta launch: the site is behind a soft e-mail gate
+  //              (leave your email → click the link → `sl_access` cookie).
+  //              /admin keeps its own login; the gate pages stay open.
   //   anything else (default / pre-launch) → the whole site is behind login.
   if (process.env.AUTH_REQUIRED === "false") {
     const { pathname } = request.nextUrl;
-    const adminOnly =
+
+    // /admin (+ its APIs) keeps the full email+password login.
+    if (
       pathname === "/admin" ||
       pathname.startsWith("/admin/") ||
-      pathname.startsWith("/api/admin/");
-    if (!adminOnly) return NextResponse.next();
+      pathname.startsWith("/api/admin/")
+    ) {
+      return gate(request as never, event as never);
+    }
+
+    // The e-mail gate itself, the auth API and the login page stay open.
+    if (
+      pathname === "/toegang" ||
+      pathname.startsWith("/toegang/") ||
+      pathname.startsWith("/api/toegang/") ||
+      pathname.startsWith("/api/auth/") ||
+      pathname === "/login"
+    ) {
+      return NextResponse.next();
+    }
+
+    // Everything else needs a valid access cookie.
+    const token = request.cookies.get(ACCESS_COOKIE)?.value;
+    if (await verifyAccessToken(token)) return NextResponse.next();
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ ok: false, error: "Access required." }, { status: 401 });
+    }
+    return NextResponse.redirect(new URL("/toegang", request.nextUrl.origin));
   }
 
   return gate(request as never, event as never);
