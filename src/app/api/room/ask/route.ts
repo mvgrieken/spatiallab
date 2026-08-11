@@ -4,7 +4,7 @@ import { RoomAiError } from "@/lib/ai/client";
 import { askRoom } from "@/lib/ai/room";
 import { mockAnswer } from "@/lib/ai/mock";
 import { isMockMode } from "@/lib/config";
-import { readJsonBody, roomErrorResponse } from "@/lib/api";
+import { budgetGuard, readJsonBody, roomErrorResponse } from "@/lib/api";
 import { askRequestSchema } from "@/lib/validation/schemas";
 
 export const runtime = "nodejs";
@@ -31,6 +31,10 @@ export async function POST(request: NextRequest) {
       mock: true,
     });
   }
+
+  // Paid work starts here: count it against today's budget first.
+  const overBudget = await budgetGuard();
+  if (overBudget) return overBudget;
 
   try {
     const answer = await askRoom(frames, question, { language, summary });
