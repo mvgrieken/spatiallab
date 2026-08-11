@@ -3,6 +3,8 @@ import "server-only";
 import { NextRequest, NextResponse } from "next/server";
 
 import type { RoomAiError } from "@/lib/ai/client";
+import { consumeAnalysisBudget, countError } from "@/lib/store/counters";
+import type { ErrorClass } from "@/lib/store/keys";
 import { MAX_REQUEST_BYTES } from "@/lib/validation/schemas";
 
 /**
@@ -48,8 +50,41 @@ export async function readJsonBody(request: NextRequest): Promise<BodyResult> {
   }
 }
 
-export function roomErrorResponse(err?: RoomAiError): NextResponse {
+/**
+ * Guard every paid analysis against the daily budget.
+ *
+ * Returns a response when today's budget is spent, `null` when the request may
+ * proceed. S-001: als de counter-store geconfigureerd maar onbereikbaar is,
+ * faalt deze guard CLOSED (503) — een betaalde, anonieme LLM-route mag niet
+ * ongeteld doorlopen wanneer de enige kostenrem wegvalt. (Voorheen faalde dit
+ * OPEN; de per-IP firewall + provider-spendlimiet blijven de andere lagen.)
+ */
+export async function budgetGuard(): Promise<NextResponse | null> {
+  const { exhausted, unavailable } = await consumeAnalysisBudget();
+  if (unavailable) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "SpatialLab is briefly unavailable (the usage counter can't be reached). Please try again in a moment.",
+      },
+      { status: 503 },
+    );
+  }
+  if (!exhausted) return null;
+  return NextResponse.json(
+    {
+      ok: false,
+      error:
+        "Today's analysis budget for this experiment is used up. SpatialLab runs on a fixed daily budget so it stays free — please try again tomorrow.",
+    },
+    { status: 429 },
+  );
+}
+
+export async function roomErrorResponse(err?: RoomAiError): Promise<NextResponse> {
   const kind = err?.kind ?? "upstream";
+  await countError(kind as ErrorClass);
   const messages: Record<string, { status: number; error: string }> = {
     config: {
       status: 503,
