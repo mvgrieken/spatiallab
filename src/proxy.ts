@@ -60,6 +60,19 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     return NextResponse.next();
   }
 
+  // Auth is configured. AUTH_REQUIRED chooses the SCOPE of the gate:
+  //   "false"  → public launch: only /admin (+ its APIs) stays behind login,
+  //              the experiments are public; the admin login keeps working.
+  //   anything else (default / pre-launch) → the whole site is behind login.
+  if (process.env.AUTH_REQUIRED === "false") {
+    const { pathname } = request.nextUrl;
+    const adminOnly =
+      pathname === "/admin" ||
+      pathname.startsWith("/admin/") ||
+      pathname.startsWith("/api/admin/");
+    if (!adminOnly) return NextResponse.next();
+  }
+
   return gate(request as never, event as never);
 }
 
