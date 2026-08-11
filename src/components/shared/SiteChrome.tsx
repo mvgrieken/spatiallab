@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { TesterEmailPrompt } from "./TesterEmailPrompt";
+
 /** Shared header/footer chrome. */
 const GITHUB_URL = "https://github.com/mvgrieken";
 
@@ -36,6 +38,9 @@ export function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-line">
       <div className="mx-auto max-w-3xl px-5 py-8">
+        <div className="mb-8">
+          <TesterEmailPrompt />
+        </div>
         <p className="text-sm font-medium">SpatialLab by AtThis</p>
         {/* Site-wide: not every experiment uses AI (#003, #004 don't). */}
         <p className="mt-1 text-sm text-muted">

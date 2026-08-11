@@ -125,6 +125,22 @@ export default function PrivacyPage() {
           </section>
 
           <section>
+            <h2 className="text-lg font-semibold">Beta tester email (optional)</h2>
+            <p className="mt-2 text-muted">
+              During the public beta you can optionally leave your email to get
+              updates. This is the one place SpatialLab handles a personal
+              detail, and only if you ask it to: you opt in with an explicit
+              consent checkbox, and we send a confirmation email — you receive
+              nothing until you click it (double opt-in, no login link). The
+              address is stored by AtThis on EU infrastructure (the shared
+              consent platform), kept separate from the anonymous analytics
+              above, and never linked to your scans, questions or answers. You
+              can unsubscribe at any time, and you can ask us to delete your
+              address by replying to any email.
+            </p>
+          </section>
+
+          <section>
             <h2 className="text-lg font-semibold">What the output is — and is not</h2>
             <p className="mt-2 text-muted">
               Answers are experimental and indicative. They are rough visual
