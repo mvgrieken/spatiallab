@@ -3,6 +3,9 @@
 import { FormEvent, useState } from "react";
 
 import { AnnotatedFrame, CONFIDENCE_LABELS } from "@/components/shared/AnnotatedFrame";
+import { AnswerFeedback } from "@/components/shared/AnswerFeedback";
+import { ShareResult } from "@/components/shared/ShareResult";
+import { loadImage } from "@/lib/share/card";
 import { IndeterminateBar } from "@/components/shared/Progress";
 import { Button } from "@/components/ui/Button";
 import { TextInput } from "@/components/ui/TextInput";
@@ -210,6 +213,36 @@ export function ResultView({
 
       {/* Confidence legend + restart */}
       <section className="border-t border-line pt-6">
+        <AnswerFeedback className="mb-6" />
+        <ShareResult
+          className="mb-6"
+          filename="spatiallab-ask-your-room.png"
+          buildSpec={async () => {
+            // Share the most recent answer when one exists, otherwise the
+            // observation currently on screen — in both cases the thing the
+            // visitor is actually looking at.
+            const last = asked[asked.length - 1]?.answer;
+            const frameIndex = last?.frameIndex ?? observation?.frameIndex ?? 0;
+            const marker = last?.marker ?? observation?.marker;
+            const hero = await loadImage(
+              frameUrls[Math.min(frameIndex, frameUrls.length - 1)] ?? "",
+            );
+            return {
+              experiment: "#001 Ask Your Room",
+              headline: last?.shortAnswer ?? observation?.title ?? analysis.shortSummary,
+              detail: last
+                ? CONFIDENCE_LABELS[last.confidence]
+                : observation
+                  ? CONFIDENCE_LABELS[observation.confidence]
+                  : undefined,
+              hero,
+              heroSize: hero
+                ? { width: hero.naturalWidth, height: hero.naturalHeight }
+                : undefined,
+              marker,
+            };
+          }}
+        />
         <p className="text-xs text-faint">
           Confidence labels: {CONFIDENCE_LABELS.high} · {CONFIDENCE_LABELS.medium} ·{" "}
           {CONFIDENCE_LABELS.low}. Experimental AI output — estimates are not

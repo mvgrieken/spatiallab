@@ -32,7 +32,8 @@ evidence, and an honest confidence label.
 
 - No LiDAR, WebXR or RoomPlan; no exact measurements — estimates only
 - No structural, electrical, fire-safety, health or professional advice
-- No accounts, no database, no storage of images, questions or answers
+- No accounts, and no storage of images, questions, answers or addresses
+  (only anonymous site-wide counters — see Privacy choices)
 - No video recording (`MediaRecorder` is not used at all)
 
 ## Local development
@@ -95,8 +96,8 @@ npm run build      # production build
 
 ## Architecture
 
-Single Next.js (App Router) app, deliberately without a database, auth, CMS or
-plugin architecture. Clear separation of concerns:
+Single Next.js (App Router) app, deliberately without a content database, CMS
+or plugin architecture (the only persistence is a counter store). Clear separation of concerns:
 
 ```
 src/
@@ -139,8 +140,12 @@ frames. Follow-up questions re-send the same frames to `/api/room/ask`.
 
 ## Privacy choices
 
-- **No storage**: no video, images, frames, questions, answers, profiles,
-  sessions or IP addresses in any SpatialLab database (there is no database).
+- **No user content stored**: no video, images, frames, questions, answers,
+  addresses, audio, profiles or sessions are persisted anywhere.
+- **Anonymous counters only**: site-wide vote tallies, error tallies, a daily
+  analysis count, and short-lived hashed keys for dedupe and rate limiting that
+  expire within 24 hours. Hosted in Frankfurt (EU). A counter is an integer —
+  never a row about a person.
 - **Client-side minimization**: only ~6 downscaled JPEG frames leave the
   device; the raw camera stream never does.
 - **Provider processing**: frames are processed by Anthropic under their data
@@ -156,8 +161,8 @@ frames. Follow-up questions re-send the same frames to `/api/room/ask`.
 
 ## Cost & abuse considerations
 
-This version has no accounts and no database, so hard per-user rate limiting
-is not possible. What is in place:
+This version has no accounts, so per-user rate limiting is not possible.
+What is in place:
 
 - Max 8 frames per request, ~1.6 MB per frame, ~4.2 MB per request (server-enforced)
 - Question length capped (400 chars), max 3 questions per browser session
@@ -166,18 +171,31 @@ is not possible. What is in place:
   instructions embedded in user questions
 - Timeouts (120 s route cap, 90 s upstream), at most 1 SDK retry
 - Controlled, generic error messages (no internals leaked)
+- **Daily analysis budget** (`DAILY_ANALYSIS_BUDGET`, default 300 ≈ €30/day):
+  paid routes count against a per-UTC-day ceiling and return a graceful
+  "budget used up" state instead of failing. Fails open when the counter store
+  is unreachable, so an outage cannot take the site down — the firewall rule
+  and the provider spend limit are the other two layers.
 
 **Be aware:** client-side limits (question count, frame count) can be bypassed
 by anyone crafting requests directly; the server re-validates shapes and
 sizes, but there is no per-IP rate limit yet. Recommended safeguards:
 
-1. **Anthropic spend limit**: Console → Billing → set a monthly spend cap.
-2. **Vercel spend management**: Project → Settings → Billing/Spend Management →
+1. **Kill switch (fastest, seconds)**: flip `killswitch_spatiallab` in Vercel
+   Edge Config. No deploy, no code change; the site serves a maintenance page
+   until the flag is cleared. This is the emergency brake — reach for it first.
+2. **Daily budget**: lower `DAILY_ANALYSIS_BUDGET` in the Vercel environment to
+   throttle without going dark.
+3. **Anthropic spend limit**: Console → Billing → set a monthly spend cap.
+4. **Vercel spend management**: Project → Settings → Billing/Spend Management →
    set a pause threshold.
-3. **Kill switch**: remove `ANTHROPIC_API_KEY` from the Vercel environment and
-   redeploy (or pause the project) — the API then returns a friendly 503.
-4. **Later**: add per-IP rate limiting (e.g. Vercel Firewall rate rules or an
-   Upstash-based limiter) before promoting beyond a hobby preview.
+5. **Still to do before the gate comes off**: per-IP rate-limit rules on
+   `/api/room/*`, `/api/spots/*` and `/api/roof/analyze` (Vercel Firewall,
+   dashboard configuration — owner action, not code).
+
+Removing `ANTHROPIC_API_KEY` also disables the AI routes, but it is the slower
+and blunter option (needs a redeploy, and leaves the non-AI experiments in a
+half-working state). Use the kill switch instead.
 
 ## Deployment
 
