@@ -62,8 +62,11 @@ export function writeLimitKey(clientHash: string): string {
   return `write-rate:${clientHash}`;
 }
 
-/** Default: ~300 analyses/day ≈ €30/day at ~€0,10 per analysis. */
-export const DEFAULT_DAILY_ANALYSIS_BUDGET = 300;
+/** Default: 25 analyses/dag ≈ €10/dag bij €0,40 per analyse (EUR_PER_ANALYSIS) —
+ *  de door de eigenaar gestelde harde daglimiet. Prod zet dit expliciet via
+ *  DAILY_ANALYSIS_BUDGET; deze default is de veilige terugval (de eerdere 300 ×
+ *  €0,40 = ~€120/dag, 12× te hoog). */
+export const DEFAULT_DAILY_ANALYSIS_BUDGET = 25;
 
 export function dailyAnalysisBudget(): number {
   const raw = process.env.DAILY_ANALYSIS_BUDGET?.trim();

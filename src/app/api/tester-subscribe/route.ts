@@ -1,6 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
+import {
+  addressHash,
+  allowMailAction,
+  clientHash,
+  requestIp,
+} from "@/lib/store/counters";
+
 export const runtime = "nodejs";
 
 const Body = z.object({
@@ -29,6 +36,19 @@ export async function POST(req: NextRequest): Promise<Response> {
     return NextResponse.json({ error: "invalid_input" }, { status: 400 });
   }
 
+  const email = parsed.data.email.toLowerCase();
+
+  // Zelfde abuse-rem als de toegangspoort: dit triggert de dubbele-opt-in-mail
+  // van de hub, dus per IP (8/uur) én per doeladres (3/24u) begrenzen om
+  // mailbombarderen / Resend-misbruik te voorkomen. Over de limiet → stil ok.
+  const [ipOk, addrOk] = await Promise.all([
+    allowMailAction("tester-ip", clientHash(requestIp(req.headers)), 8, 60 * 60),
+    allowMailAction("tester-addr", addressHash(email), 3, 24 * 60 * 60),
+  ]);
+  if (!ipOk || !addrOk) {
+    return NextResponse.json({ ok: true });
+  }
+
   const key = process.env.COMMS_API_KEY_SPATIALLAB;
   const hub = process.env.COMMS_HUB_URL ?? "https://atthis.ai";
   // Zonder key/hub is opt-in niet geconfigureerd (lokale dev): stil generiek ok,
@@ -42,7 +62,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          email: parsed.data.email.toLowerCase(),
+          email,
           topics: ["updates"],
           source: "spatiallab-beta",
         }),

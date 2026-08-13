@@ -44,10 +44,47 @@ export function clientHash(ip: string | null): string {
     .slice(0, 24);
 }
 
+/**
+ * Opake sleutel per e-mailadres, gezouten met dezelfde server-salt als
+ * clientHash — voor de per-adres-limiet op de mail-endpoints, zodat één adres
+ * niet gebombardeerd kan worden, óók niet vanaf verspreide IP's. Nooit naast
+ * een waarde opgeslagen; alleen als Redis-sleutel met TTL.
+ */
+export function addressHash(email: string): string {
+  const salt = process.env.CLIENT_HASH_SALT?.trim() || "spatiallab-dev-salt";
+  return createHash("sha256")
+    .update(`addr:${salt}:${email.toLowerCase()}`)
+    .digest("hex")
+    .slice(0, 24);
+}
+
+/**
+ * Het IP van de bezoeker, of null als het niet te bepalen is.
+ *
+ * `x-forwarded-for` is een kommalijst waarvan de client het BEGIN zelf kan
+ * vullen; achter Vercel (precies één vertrouwde hop) is de LAATSTE waarde die
+ * welke Vercel zelf toevoegde — de betrouwbare. Het eerste element pakken laat
+ * een aanvaller per verzoek een ander "IP" kiezen en zo de dedupe én rate-limit
+ * omzeilen. Fleet-conventie, gelijk aan `platform/src/lib/rate-limit.ts`.
+ */
 export function requestIp(headers: Headers): string | null {
   const forwarded = headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0]?.trim() || null;
-  return headers.get("x-real-ip");
+  if (forwarded) {
+    const hops = forwarded.split(",").map((h) => h.trim()).filter(Boolean);
+    const last = hops[hops.length - 1];
+    if (last) return stripPort(last);
+  }
+  const realIp = headers.get("x-real-ip")?.trim();
+  return realIp ? stripPort(realIp) : null;
+}
+
+/** '1.2.3.4:5678' → '1.2.3.4'; '[::1]:5678' → '::1'. */
+function stripPort(value: string): string {
+  const bracket = value.match(/^\[([^\]]+)\](?::\d+)?$/);
+  if (bracket) return bracket[1];
+  const withPort = value.match(/^(\d{1,3}(?:\.\d{1,3}){3}):\d+$/);
+  if (withPort) return withPort[1];
+  return value;
 }
 
 export type Vote = "correct" | "incorrect";
@@ -82,6 +119,35 @@ export async function allowWrite(hash: string, max: number): Promise<boolean> {
   if (count === null) return true; // store unavailable → do not block
   if (count === 1) {
     await redisCommand(["EXPIRE", key, String(WRITE_LIMIT_TTL_S)]);
+  }
+  return count <= max;
+}
+
+/**
+ * Abuse-guard voor de mail-versturende endpoints (toegangslink, tester-opt-in).
+ * Telt deze actie onder `ns:id` en zegt of hij nog mag. Toepassen per IP ÉN per
+ * doeladres dekt zowel scripted spam als slachtoffer-gericht mailbombarderen
+ * vanaf verspreide IP's.
+ *
+ * Fail-CLOSED in productie wanneer de store geconfigureerd-maar-onbereikbaar is
+ * (net als de budget-cap, CSO-F2): een mail-endpoint mag bij een outage niet
+ * stilletjes weer een open cannon worden. Lokaal/onbeconfigureerd → toestaan,
+ * zodat dev werkt.
+ */
+export async function allowMailAction(
+  ns: string,
+  id: string,
+  max: number,
+  ttlSeconds: number,
+): Promise<boolean> {
+  const key = `${ns}:${id}`;
+  const count = toInteger(await redisCommand(["INCR", key]));
+  if (count === null) {
+    if (storeConfigured() || process.env.NODE_ENV === "production") return false;
+    return true;
+  }
+  if (count === 1) {
+    await redisCommand(["EXPIRE", key, String(ttlSeconds)]);
   }
   return count <= max;
 }
