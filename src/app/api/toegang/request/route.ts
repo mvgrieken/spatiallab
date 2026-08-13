@@ -4,6 +4,12 @@ import { z } from "zod";
 import { signAccessToken } from "@/lib/access-link";
 import { sendAccessLinkEmail } from "@/lib/access-mail";
 import { getSiteUrl } from "@/lib/site";
+import {
+  addressHash,
+  allowMailAction,
+  clientHash,
+  requestIp,
+} from "@/lib/store/counters";
 
 export const runtime = "nodejs";
 
@@ -34,7 +40,18 @@ export async function POST(req: NextRequest): Promise<Response> {
   }
   const email = parsed.data.email.toLowerCase();
 
-  const token = await signAccessToken(email);
+  // Abuse-rem vóór het versturen: per IP (8/uur) én per doeladres (3/24u), zodat
+  // dit endpoint geen open e-mail-cannon is — mailbombarderen van een willekeurig
+  // adres (ook vanaf verspreide IP's) en Resend-kosten/reputatie-misbruik vanaf
+  // de gedeelde afzender. Over de limiet → stil generiek {ok:true}, geen mail.
+  const ipHash = clientHash(requestIp(req.headers));
+  const addrHash = addressHash(email);
+  const [ipOk, addrOk] = await Promise.all([
+    allowMailAction("access-ip", ipHash, 8, 60 * 60),
+    allowMailAction("access-addr", addrHash, 3, 24 * 60 * 60),
+  ]);
+
+  const token = ipOk && addrOk ? await signAccessToken(email) : null;
   if (token) {
     const link = `${getSiteUrl()}/toegang/verify?token=${encodeURIComponent(token)}`;
     await sendAccessLinkEmail(email, link);

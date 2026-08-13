@@ -125,18 +125,22 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold">Beta tester email (optional)</h2>
+            <h2 className="text-lg font-semibold">Your email address</h2>
             <p className="mt-2 text-muted">
-              During the public beta you can optionally leave your email to get
-              updates. This is the one place SpatialLab handles a personal
-              detail, and only if you ask it to: you opt in with an explicit
-              consent checkbox, and we send a confirmation email — you receive
-              nothing until you click it (double opt-in, no login link). The
-              address is stored by AtThis on EU infrastructure (the shared
-              consent platform), kept separate from the anonymous analytics
-              above, and never linked to your scans, questions or answers. You
-              can unsubscribe at any time, and you can ask us to delete your
-              address by replying to any email.
+              During the public beta SpatialLab handles your email address in two
+              optional places, and only when you provide it. First, the beta is
+              behind a soft access gate: you leave your address and we send you a
+              one-time link that sets an access cookie so you can use the site —
+              this is a lightweight gate, not an account, and no password is
+              involved. Second, you can separately opt in to product updates with
+              an explicit consent checkbox, in which case we send a confirmation
+              email and you receive nothing further until you click it (double
+              opt-in). If you tick the updates box on the access form, that same
+              consent applies. In both cases the address is stored by AtThis on
+              EU infrastructure (the shared consent platform), kept separate from
+              the anonymous analytics above, and never linked to your scans,
+              questions or answers. You can unsubscribe or ask us to delete your
+              address at any time by replying to any email.
             </p>
           </section>
 
