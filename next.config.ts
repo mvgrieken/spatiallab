@@ -1,26 +1,49 @@
 import type { NextConfig } from "next";
 
-// S-002: security-headers. De niet-brekende set wordt ENFORCED; de CSP staat
-// bewust op Report-Only zodat een te strak connect-/script-src een live pagina
-// niet breekt. Na een QA-ronde (violation-reports) kan de CSP naar een enforced
-// `Content-Security-Policy` met nonce (verwijder dan 'unsafe-inline').
+// S-002: security-headers, nu volledig ENFORCED.
+//
+// De CSP stond op Report-Only "tot een QA-ronde met violation-reports". Die
+// ronde kon nooit komen: er staat geen `report-uri` en geen `report-to` in de
+// policy, dus die reports gingen nergens heen. Een Report-Only zonder
+// rapportage-endpoint is geen tussenstap maar een permanente parkeerplaats — en
+// intussen blokkeert hij niets.
+//
+// De QA is daarom statisch gedaan (2026-08-14):
+//
+// - `next/font/google` host de fontbestanden bij de build zelf mee vanuit
+//   /_next/static, dus `font-src 'self' data:` volstaat.
+// - PDOK en 3DBAG zijn de enige externe browser-fetches en staan al in
+//   connect-src/img-src. Upstash en Anthropic draaien server-side.
+// - `URL.createObjectURL` (DoesItFit, share/card) levert blob:-URL's; blob:
+//   staat al in img-src en media-src.
+// - Vercel Analytics is de uitzondering die aandacht vroeg — zie hieronder.
 //
 // LET OP: deze app gebruikt camera (CameraScan) + microfoon (acoustics) —
 // Permissions-Policy staat die daarom expliciet toe voor 'self'.
-const CSP_REPORT_ONLY = [
+//
+// `upgrade-insecure-requests` is eruit bij het enforcen. Op Vercel is elk
+// antwoord al https met HSTS-preload, dus in productie voegt de directive niets
+// toe; het enige waar hij gedrag verandert is lokaal draaien over http.
+const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  // va.vercel-scripts.com hoort bij @vercel/analytics. In productie serveert
+  // Vercel dat script vanaf /_vercel/insights (same-origin, dus 'self' dekt het),
+  // maar buiten productie laadt het pakket zijn debug-variant wél van die host.
+  // Zonder deze regel breekt het dus niet op de site maar in dev — de plek waar
+  // je het als CSP-fout aanziet en gaat zoeken in de verkeerde app.
+  "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://*.pdok.nl https://service.pdok.nl",
   "font-src 'self' data:",
   // Browser-fetches: NL open data (PDOK/3DBAG). Upstash/Anthropic zijn server-side.
+  // Vercel Analytics post naar /_vercel/insights/event — same-origin, dus
+  // gedekt door 'self'. De open-data-hosts zijn de enige echte uitzonderingen.
   "connect-src 'self' https://api.3dbag.nl https://api.pdok.nl https://service.pdok.nl",
   "media-src 'self' blob:",
   "frame-ancestors 'none'",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  "upgrade-insecure-requests",
 ].join("; ");
 
 const SECURITY_HEADERS = [
@@ -30,7 +53,7 @@ const SECURITY_HEADERS = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // camera/microfoon zijn kernfeatures → self toestaan; geolocation dicht.
   { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
-  { key: "Content-Security-Policy-Report-Only", value: CSP_REPORT_ONLY },
+  { key: "Content-Security-Policy", value: CSP },
 ];
 
 const nextConfig: NextConfig = {
