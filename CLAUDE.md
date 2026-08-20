@@ -88,3 +88,13 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## WBSO — deze repo valt buiten de S&O
+
+Deze repo hangt aan **geen enkele WBSO-beschikking**. Werk hier levert dus geen
+S&O-uren op, en het hoort ook niet als zodanig te worden gelabeld of geboekt.
+
+Zeg dat één keer als het relevant is en bouw verder — het is een feit over de
+administratie, geen oordeel over het werk. Wordt deze repo later wél onder een
+beschikking gebracht, dan moet de koppeling in `wbso_project_repos` op de hub
+staan én moet dit blok vervangen worden door de knelpunten van dat project.
