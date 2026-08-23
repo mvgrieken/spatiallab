@@ -11,12 +11,12 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.115.0",
+    "@anthropic-ai/sdk": "^0.120.0",
     "@vercel/analytics": "^2.0.1",
-    "@vercel/edge-config": "^1.5.0",
+    "@vercel/edge-config": "^1.5.1",
     "bcryptjs": "^3.0.3",
     "geist": "^1.7.2",
-    "next": "16.3.0",
+    "next": "16.3.1",
     "next-auth": "^5.0.0-beta.32",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -31,10 +31,10 @@
     "@types/react-dom": "^19",
     "@types/three": "^0.185.4",
     "eslint": "^9",
-    "eslint-config-next": "16.3.0",
+    "eslint-config-next": "16.3.1",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   },
   "overrides": {
     "nanoid": "^3.3.18"
