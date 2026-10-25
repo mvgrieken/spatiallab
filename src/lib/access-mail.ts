@@ -1,4 +1,27 @@
 import "server-only";
+import { HUISSTIJL, alinea, klein, knopMetTerugval, renderMail } from "./mail-huisstijl";
+
+const ONDERWERP = "Je toegangslink voor SpatialLab";
+
+/**
+ * De mail in de vlootopmaak (logo, SpatialLab-oranje knop). De link wordt
+ * geëscapet en alleen een http(s)-link wordt een knop; voorheen ging hij
+ * rauw in een href.
+ */
+export function toegangsmailHtml(link: string): string {
+  return renderMail(HUISSTIJL, {
+    onderwerp: ONDERWERP,
+    inhoud: [
+      alinea(HUISSTIJL, "Welkom bij de SpatialLab-bèta."),
+      knopMetTerugval(HUISSTIJL, link, "Open SpatialLab"),
+      klein(HUISSTIJL, "De link is 30 dagen geldig. Heb je dit niet aangevraagd? Negeer deze mail."),
+    ].join("\n"),
+  });
+}
+
+export function toegangsmailTekst(link: string): string {
+  return ["Welkom bij de SpatialLab-bèta.", link, "De link is 30 dagen geldig. Heb je dit niet aangevraagd? Negeer deze mail."].join("\n\n");
+}
 
 /**
  * Verstuurt de bèta-toegangslink per e-mail (Resend). SpatialLab had bewust geen
@@ -18,12 +41,9 @@ export async function sendAccessLinkEmail(email: string, link: string): Promise<
       body: JSON.stringify({
         from,
         to: email,
-        subject: "Je toegangslink voor SpatialLab",
-        html: [
-          "<p>Welkom bij de SpatialLab-bèta.</p>",
-          `<p><a href="${link}">Open SpatialLab</a></p>`,
-          "<p>De link is 30 dagen geldig. Heb je dit niet aangevraagd? Negeer deze mail.</p>",
-        ].join(""),
+        subject: ONDERWERP,
+        html: toegangsmailHtml(link),
+        text: toegangsmailTekst(link),
       }),
       signal: AbortSignal.timeout(8000),
     });
